@@ -1,54 +1,44 @@
-# NAV AiDE Copilot Kit
+# NAV-AIDE
 
-This package converts your original `prompt.md` into a **Copilot-ready file set** for both IDE-based workflows and repository/cloud-agent workflows.
+NAV-AIDE is an offline-first London travel assistant designed to help tourists and visitors navigate public transport without relying on mobile data.
 
-## What's included
+The project combines local maps, local routing data, voice input and output, and on-device AI intent handling so users can ask for help naturally, even in low-signal environments such as Underground stations.
 
-- `.github/copilot-instructions.md` — repository-wide instructions
-- `.github/instructions/*.instructions.md` — path-specific instructions
-- `.github/prompts/*.prompt.md` — phased prompt files for IDE prompt-file workflows
-- `AGENTS.md` — agent instructions supported by Copilot cloud agent and CLI contexts
-- `.github/agents/nav-aide-builder.agent.md` — custom agent profile for IDE workflows that support custom agents
+## What It Does
 
-## Why this structure
+- Provides London-focused public transport navigation for visitors.
+- Supports text and voice search for travel questions.
+- Uses offline maps and local routing assets for core navigation.
+- Resolves stations, points of interest, and aliases locally before routing.
+- Offers a "LOST?" helper flow for situations where a user needs to identify nearby signs, stations, or directions.
+- Supports multilingual travel queries as part of the MVP design.
+- Avoids cloud AI APIs for core navigation, search, voice, and LLM inference.
 
-GitHub's docs support several related but different mechanisms:
+## MVP Scope
 
-- repository-wide custom instructions via `.github/copilot-instructions.md`
-- path-specific instructions via `.github/instructions/**/*.instructions.md`
-- prompt files in `.github/prompts/*.prompt.md`
-- agent instructions via `AGENTS.md`
-- custom agent profiles in `.github/agents/*.agent.md`
+NAV-AIDE is planned as a React Native mobile app with:
 
-This kit gives you all of them in a way that fits NAV AiDE's phased build approach.
+- A GO flow for route search, transport selection, map display, route cards, and TTS playback.
+- A LOST? flow for resolving location clues and guiding users when they are unsure where they are.
+- Offline map support using MBTiles and MapLibre integration points.
+- Local route and POI data, including Tube graph data, bus route data, POI data, location aliases, and Valhalla routing tiles.
+- On-device speech-to-text and text-to-speech using OS capabilities.
+- On-device LLM inference using Gemma through `llama.rn`.
+- A simple GitHub Pages marketing site in `docs/`.
 
-## Suggested usage
+## Architecture Principles
 
-### Option A — VS Code / JetBrains / IDE workflow
+- Offline-first: core routing, map rendering, POI search, voice I/O, and local AI inference must not depend on the network.
+- Local resolution first: the app resolves entities such as stations and POIs before routing or rendering responses.
+- No cloud AI for the MVP: AI features are intended to run on-device.
+- Phased delivery: prompt validation, data pipeline, core Node.js logic, React Native shell, and feature integration are developed separately.
 
-1. Copy the files into the root of your repository.
-2. Use the prompt files from `.github/prompts/` phase by phase.
-3. Optionally select the `nav-aide-builder` custom agent if your IDE supports it.
+## Repository Contents
 
-### Option B — GitHub repository / cloud agent workflow
+- `nav-aide-copilot-kit/` contains Copilot and agent instructions for building NAV-AIDE in phases.
+- `nav-aide-copilot-kit/docs/` contains the current static GitHub Pages marketing site.
+- `LICENSE` contains the project license.
 
-1. Copy:
-   - `.github/copilot-instructions.md`
-   - `.github/instructions/`
-   - `AGENTS.md`
-2. Ask the agent to start with the earliest unfinished phase.
-3. Use the phased prompt files as task briefs if needed.
+## Status
 
-## Recommended order
-
-1. `nav-aide-phase-0.prompt.md`
-2. `nav-aide-phase-1.prompt.md`
-3. `nav-aide-phase-2.prompt.md`
-4. `nav-aide-phase-3.prompt.md`
-5. `nav-aide-phase-4.prompt.md`
-6. `nav-aide-github-pages.prompt.md`
-
-## Notes
-
-- This kit is intentionally split by phase because a single giant one-shot prompt is much less reliable for a React Native + offline-data + GitHub Pages project.
-- Review and adjust commands, dependency versions, and CI details inside your actual repo before running everything end to end.
+This repository is currently in early planning and scaffolding. The existing files define the product direction, implementation phases, and initial documentation/site structure.
