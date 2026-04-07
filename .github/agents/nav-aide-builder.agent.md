@@ -1,4 +1,3 @@
-cat ~/.ssh/id_ed25519.pub---
 ---
 name: nav-aide-builder
 description: Builds the NAV AiDE mobile MVP and GitHub Pages site using the repository architecture and phased prompts
