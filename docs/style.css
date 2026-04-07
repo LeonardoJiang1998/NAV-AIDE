@@ -157,6 +157,10 @@ a {
   gap: 1.25rem;
 }
 
+.feature-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .card,
 .mockup,
 .signup__form {
@@ -173,6 +177,16 @@ a {
 .card h3 {
   margin: 0 0 0.75rem;
   font-size: 1.1rem;
+}
+
+.detail-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--text-soft);
+}
+
+.detail-list li + li {
+  margin-top: 0.9rem;
 }
 
 .mockup {
@@ -240,6 +254,10 @@ a {
 @media (max-width: 900px) {
   .feature-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .feature-grid--three {
+    grid-template-columns: 1fr;
   }
 
   .two-column,

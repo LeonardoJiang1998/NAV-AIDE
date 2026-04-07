@@ -17,8 +17,8 @@
         <h1>NAV AiDE</h1>
         <p class="hero__tagline">Your AI London guide. Works underground.</p>
         <p class="hero__copy">
-          Built for international visitors who need clear London transport help in low-signal spaces,
-          from Tube platforms to unfamiliar streets.
+          Built for international tourists who need reliable London transport help in low-signal
+          spaces, with local maps, local routing data, voice support, and on-device AI guidance.
         </p>
         <div class="hero__actions">
           <a class="button button--primary" href="#coming-soon">Get updates</a>
@@ -37,11 +37,12 @@
           <div>
             <p>
               Visitors often switch between map apps, translation tools, and station signs while trying
-              to understand the network. Underground, that experience breaks down fast.
+              to understand London's transport network. Underground, that experience breaks down fast.
             </p>
             <p>
-              NAV AiDE focuses on the MVP need: helping tourists find their way across London transport
-              with offline guidance, multilingual support, and simple next-step answers.
+              The latest MVP direction in this repository stays focused on practical travel help:
+              offline-first navigation, multilingual queries, local place resolution, and clear next
+              steps when the route or surroundings feel unfamiliar.
             </p>
           </div>
         </div>
@@ -55,13 +56,14 @@
           </div>
           <div>
             <p>
-              NAV AiDE combines offline maps, local routing data, and AI-assisted guidance designed for
-              London visitors. It is built to support practical travel questions without depending on a
-              constant mobile connection.
+              NAV AiDE combines offline maps, local routing assets, voice input and output, and
+              on-device AI intent handling designed for London visitors. It is built to answer practical
+              travel questions without depending on a constant mobile connection.
             </p>
             <p>
-              The experience stays focused on the MVP: route help, map context, multilingual travel
-              support, and a fallback for moments when the user feels lost.
+              The app direction now centers on two core flows: GO for route search, transport selection,
+              map display, and spoken guidance; and LOST? for recovering when the user is unsure where
+              they are or what sign to follow next.
             </p>
           </div>
         </div>
@@ -76,20 +78,59 @@
           <div class="feature-grid">
             <article class="card">
               <h3>140+ languages</h3>
-              <p>Support for multilingual travel queries so visitors can ask for help more naturally.</p>
+              <p>Multilingual travel queries help visitors ask for directions naturally while keeping place names grounded in English.</p>
             </article>
             <article class="card">
               <h3>Offline maps</h3>
-              <p>Map access that stays useful in tunnels, stations, and other low-signal environments.</p>
+              <p>Offline maps and local assets are designed to stay useful in tunnels, stations, and other low-signal environments.</p>
             </article>
             <article class="card">
               <h3>Door-to-door directions</h3>
-              <p>Clear route guidance across walking and public transport for practical London journeys.</p>
+              <p>Door-to-door guidance is planned across walking and public transport for practical London journeys.</p>
             </article>
             <article class="card">
               <h3>LOST? helper</h3>
-              <p>A focused recovery flow for identifying nearby clues and getting back on track quickly.</p>
+              <p>A focused recovery flow helps identify nearby signs, stations, and clues to get the journey back on track quickly.</p>
             </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-heading">
+            <p class="section-label">MVP scope</p>
+            <h2>Built around clear travel flows instead of a broad general-purpose assistant.</h2>
+          </div>
+          <div class="feature-grid feature-grid--three">
+            <article class="card">
+              <h3>GO flow</h3>
+              <p>Route search, transport selection, map display, route cards, and text-to-speech playback.</p>
+            </article>
+            <article class="card">
+              <h3>LOST? flow</h3>
+              <p>Resolve location clues locally and guide the user when they are unsure where they are.</p>
+            </article>
+            <article class="card">
+              <h3>Local-first AI</h3>
+              <p>On-device speech and AI support for intent handling and response rendering without cloud AI APIs.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--muted">
+        <div class="container two-column">
+          <div>
+            <p class="section-label">Architecture principles</p>
+            <h2>Designed to keep core guidance available even in airplane mode.</h2>
+          </div>
+          <div>
+            <ul class="detail-list">
+              <li>Offline-first core routing, map rendering, POI search, voice I/O, and local AI inference.</li>
+              <li>Local resolution of stations, points of interest, and aliases before routing or response rendering.</li>
+              <li>No cloud AI for the MVP's core navigation, search, voice, or LLM inference experience.</li>
+            </ul>
           </div>
         </div>
       </section>
@@ -98,7 +139,7 @@
         <div class="container">
           <div class="section-heading">
             <p class="section-label">Screenshot / mockup placeholder</p>
-            <h2>Preview area for the upcoming app experience.</h2>
+            <h2>Preview area for the upcoming mobile MVP experience.</h2>
           </div>
           <div class="mockup">
             <img
@@ -114,11 +155,12 @@
       <section class="section" id="coming-soon">
         <div class="container signup">
           <div>
-            <p class="section-label">Coming soon</p>
-            <h2>We are preparing the first NAV AiDE release.</h2>
+            <p class="section-label">Status</p>
+            <h2>NAV AiDE is currently in early planning and scaffolding.</h2>
             <p>
-              Email signup will be added here when the product is ready for early access. For now, this
-              section acts as a placeholder for launch updates.
+              The repository currently defines the product direction, phased implementation prompts, and
+              the first marketing site structure. Email signup will be added here when early access is
+              ready.
             </p>
           </div>
           <form class="signup__form" action="#" method="get">
