@@ -1,0 +1,20 @@
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="540" rx="24" fill="#0D1B3E"/>
+  <rect x="34" y="34" width="892" height="472" rx="20" fill="#F4F7FF"/>
+  <rect x="88" y="92" width="248" height="356" rx="32" fill="#11285A"/>
+  <rect x="116" y="144" width="192" height="18" rx="9" fill="#DCE6FF"/>
+  <rect x="116" y="178" width="164" height="12" rx="6" fill="#8FA6E8"/>
+  <rect x="116" y="226" width="192" height="164" rx="18" fill="#2548A4"/>
+  <path d="M183 307C183 288.222 198.222 273 217 273H223C241.778 273 257 288.222 257 307V309C257 327.778 241.778 343 223 343H217C198.222 343 183 327.778 183 309V307Z" fill="#DCE6FF"/>
+  <rect x="382" y="120" width="258" height="26" rx="13" fill="#11285A"/>
+  <rect x="382" y="166" width="414" height="16" rx="8" fill="#8FA6E8"/>
+  <rect x="382" y="199" width="442" height="16" rx="8" fill="#8FA6E8"/>
+  <rect x="382" y="250" width="462" height="92" rx="18" fill="#E8EEFF"/>
+  <rect x="406" y="276" width="140" height="14" rx="7" fill="#2548A4"/>
+  <rect x="406" y="304" width="388" height="12" rx="6" fill="#A6B8E8"/>
+  <rect x="382" y="368" width="462" height="92" rx="18" fill="#E8EEFF"/>
+  <rect x="406" y="394" width="126" height="14" rx="7" fill="#2548A4"/>
+  <rect x="406" y="422" width="362" height="12" rx="6" fill="#A6B8E8"/>
+  <rect x="694" y="120" width="150" height="26" rx="13" fill="#2457FF"/>
+  <text x="480" y="490" fill="#4A5C85" font-family="Arial, sans-serif" font-size="24" text-anchor="middle">NAV AiDE app preview placeholder</text>
+</svg>

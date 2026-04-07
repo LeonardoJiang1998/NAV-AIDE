@@ -1,0 +1,268 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --surface-muted: #eaf0fb;
+  --text: #10203f;
+  --text-soft: #42506b;
+  --line: #cfdaee;
+  --accent: #2457ff;
+  --accent-dark: #1238b5;
+  --shadow: 0 24px 60px rgba(16, 32, 63, 0.12);
+  --radius: 24px;
+  --container: 1120px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+}
+
+.container {
+  width: min(calc(100% - 2rem), var(--container));
+  margin: 0 auto;
+}
+
+.hero {
+  background:
+    radial-gradient(circle at top left, rgba(36, 87, 255, 0.2), transparent 35%),
+    linear-gradient(135deg, #08152f 0%, #11285a 100%);
+  color: #fff;
+}
+
+.hero__content {
+  padding: 6rem 0 5rem;
+}
+
+.eyebrow,
+.section-label {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: #b8c8ff;
+}
+
+.hero h1,
+.section h2 {
+  margin: 0;
+  line-height: 1.1;
+}
+
+.hero h1 {
+  max-width: 10ch;
+  font-size: clamp(3rem, 7vw, 5.5rem);
+}
+
+.hero__tagline {
+  margin: 1rem 0 0;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 600;
+  color: #dbe5ff;
+}
+
+.hero__copy,
+.section p,
+.card p,
+.form-note,
+.site-footer p {
+  color: var(--text-soft);
+}
+
+.hero__copy {
+  max-width: 42rem;
+  margin: 1.5rem 0 0;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.75rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.button--primary {
+  background: #fff;
+  color: #0c1a3b;
+}
+
+.button--secondary {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.section {
+  padding: 4.5rem 0;
+}
+
+.section--muted {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.two-column,
+.signup {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem 3rem;
+  align-items: start;
+}
+
+.section-heading {
+  max-width: 44rem;
+  margin-bottom: 2rem;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.card,
+.mockup,
+.signup__form {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.card {
+  padding: 1.5rem;
+}
+
+.card h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.mockup {
+  overflow: hidden;
+}
+
+.signup__form {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.5rem;
+}
+
+.signup__form label {
+  font-weight: 700;
+}
+
+.signup__form input,
+.signup__form button {
+  min-height: 3rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  padding: 0 0.9rem;
+  font: inherit;
+}
+
+.signup__form input {
+  background: #f8faff;
+}
+
+.signup__form button {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.signup__form input:disabled,
+.signup__form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.site-footer {
+  padding: 2rem 0 3rem;
+  border-top: 1px solid var(--line);
+}
+
+.footer__content {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.footer__content p,
+.footer__content a {
+  margin: 0.3rem 0 0;
+}
+
+.footer__links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .two-column,
+  .signup,
+  .footer__content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero__content {
+    padding: 4.5rem 0 4rem;
+  }
+
+  .section {
+    padding: 3.5rem 0;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .container {
+    width: min(calc(100% - 1.5rem), var(--container));
+  }
+}
