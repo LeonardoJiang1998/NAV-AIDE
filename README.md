@@ -1,55 +1,82 @@
-# NAV AiDE Copilot Kit
+# NAV AiDE
 
-This package converts your original `prompt.md` into a **Copilot-ready file set** for both IDE-based workflows and repository/cloud-agent workflows.
+NAV AiDE is an offline-first London travel assistant for international tourists. The MVP is designed to keep core travel guidance available in airplane mode using local routing data, local entity resolution, OS speech services, and on-device AI.
 
-## What's included
+Tagline: Your AI London guide. Works underground.
 
-- `.github/copilot-instructions.md` — repository-wide instructions
-- `.github/instructions/*.instructions.md` — path-specific instructions
-- `.github/prompts/*.prompt.md` — phased prompt files for IDE prompt-file workflows
-- `AGENTS.md` — agent instructions supported by Copilot cloud agent and CLI contexts
-- `.github/agents/nav-aide-builder.agent.md` — custom agent profile for IDE workflows that support custom agents
+## Current Scope
 
-## Why this structure
+The repository currently includes:
 
-GitHub's docs support several related but different mechanisms:
+- Node-first offline data pipeline scaffolding under `scripts/data-pipeline/`
+- local routing and resolution modules under `src/core/`
+- unit tests for Dijkstra and EntityResolver under `tests/unit/`
+- a static GitHub Pages intro site under `docs/`
 
-- repository-wide custom instructions via `.github/copilot-instructions.md`
-- path-specific instructions via `.github/instructions/**/*.instructions.md`
-- prompt files in `.github/prompts/*.prompt.md`
-- agent instructions via `AGENTS.md`
-- custom agent profiles in `.github/agents/*.agent.md`
+This stage does not add React Native screens or cloud-backed services.
 
-This kit gives you all of them in a way that fits NAV AiDE's phased build approach.
+## Stage 2 Local Runbook
 
-## Suggested usage
+Install dependencies:
 
-### Option A — VS Code / JetBrains / IDE workflow
+```bash
+npm install
+```
 
-1. Copy the files into the root of your repository.
-2. Use the prompt files from `.github/prompts/` phase by phase.
-3. Optionally select the `nav-aide-builder` custom agent if your IDE supports it.
+Generate the deterministic offline data scaffolds:
 
-### Option B — GitHub repository / cloud agent workflow
+```bash
+npm run stage2:data
+```
 
-1. Copy:
-   - `.github/copilot-instructions.md`
-   - `.github/instructions/`
-   - `AGENTS.md`
-2. Ask the agent to start with the earliest unfinished phase.
-3. Use the phased prompt files as task briefs if needed.
+Compile and run the Node-first verification path:
 
-## Recommended order
+```bash
+npm run stage2:test
+```
 
-1. `nav-aide-phase-0.prompt.md`
-2. `nav-aide-phase-1.prompt.md`
-3. `nav-aide-phase-2.prompt.md`
-4. `nav-aide-phase-3.prompt.md`
-5. `nav-aide-phase-4.prompt.md`
-6. `nav-aide-phase-5.prompt.md`
-7. `nav-aide-github-pages.prompt.md`
+Run only the unit tests:
 
-## Notes
+```bash
+npm test
+```
 
-- This kit is intentionally split by phase because a single giant one-shot prompt is much less reliable for a React Native + offline-data + GitHub Pages project.
-- Review and adjust commands, dependency versions, and CI details inside your actual repo before running everything end to end.
+## What Stage 2 Implements
+
+Fully implemented in this repo:
+
+- `src/core/routing/Dijkstra.ts`
+- `src/core/poi/FuzzyMatcher.ts`
+- `src/core/pipeline/EntityResolver.ts`
+- Node-testable unit coverage for Dijkstra and EntityResolver
+- local fixture assets for `tubeGraph.json` and `busRoutes.json`
+- generation scaffolds for `pois.db` and `location_aliases.db`
+
+Scaffolded only in this stage:
+
+- `pois.db` and `location_aliases.db` are emitted as schema-plus-seed SQL scaffolds, not packaged binary SQLite files
+- `london.mbtiles` and `valhalla_tiles/` remain declared offline assets pending later ingestion work
+- Tube and bus assets use deterministic London fixture seeds rather than full production network exports
+
+Still requiring external data or manual setup later:
+
+- full licensed/offline transport datasets
+- curated POI export ingestion for SQLite FTS5
+- final SQLite assembly of generated SQL into shipping `.db` files
+
+## Stage 2 Commands
+
+Individual commands:
+
+```bash
+node scripts/data-pipeline/build-tube-graph.js
+node scripts/data-pipeline/generate-bus-routes.js
+node scripts/data-pipeline/generate-pois-db.js
+node scripts/data-pipeline/generate-location-aliases-db.js
+npm run build
+npm test
+```
+
+## Product Notes
+
+NAV AiDE is multilingual, offline-first, and built for London travel, with planned emphasis on offline maps, door-to-door directions, and the LOST? helper. The MVP remains local-data-first and does not use cloud AI APIs.

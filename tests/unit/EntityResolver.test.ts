@@ -6,6 +6,7 @@ import {
     DISAMBIGUATION_THRESHOLD,
     EntityResolver,
     FUZZY_RESOLVE_THRESHOLD,
+    MIN_SCORE_GAP,
     type EntityRecord,
 } from '../../src/core/pipeline/EntityResolver.js';
 
@@ -79,4 +80,28 @@ test('EntityResolver returns unresolved when nothing is close enough', () => {
 
     assert.equal(result.status, 'unresolved');
     assert.equal(result.candidates.length, 0);
+});
+
+test('EntityResolver returns disambiguation when the best fuzzy candidate does not clear the score gap', () => {
+    const resolver = new EntityResolver([
+        {
+            id: 'station-oxford-circus',
+            canonicalName: 'Oxford Circus',
+            type: 'station',
+            aliases: [],
+        },
+        {
+            id: 'station-piccadilly-circus',
+            canonicalName: 'Piccadilly Circus',
+            type: 'station',
+            aliases: [],
+        },
+    ]);
+
+    const result = resolver.resolve('Circus');
+
+    assert.equal(result.status, 'disambiguation');
+    assert.ok(result.candidates.length >= 2);
+    assert.ok(((result.candidates[0]?.confidence ?? 0) - (result.candidates[1]?.confidence ?? 0)) < MIN_SCORE_GAP);
+    assert.ok((result.candidates[0]?.confidence ?? 0) >= DISAMBIGUATION_THRESHOLD);
 });

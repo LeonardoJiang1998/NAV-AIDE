@@ -9,7 +9,9 @@
         "start": "react-native start",
         "bundle:ios": "react-native bundle --entry-file index.js --platform ios --dev false --bundle-output .artifacts/main.jsbundle --assets-dest .artifacts",
         "build": "tsc -p tsconfig.json",
-        "test": "tsx --test tests/**/*.test.ts"
+        "test": "tsx --test tests/**/*.test.ts",
+        "stage2:data": "node scripts/data-pipeline/build-tube-graph.js && node scripts/data-pipeline/generate-bus-routes.js && node scripts/data-pipeline/generate-pois-db.js && node scripts/data-pipeline/generate-location-aliases-db.js",
+        "stage2:test": "npm run build && npm test"
     },
     "dependencies": {
         "@maplibre/maplibre-react-native": "^10.1.34",

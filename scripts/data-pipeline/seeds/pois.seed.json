@@ -1,0 +1,43 @@
+{
+    "pois": [
+        {
+            "id": "british-museum",
+            "canonicalName": "British Museum",
+            "category": "museum",
+            "latitude": 51.5194,
+            "longitude": -0.1269,
+            "zone": 1,
+            "searchTerms": [
+                "British Museum",
+                "museum",
+                "Bloomsbury"
+            ]
+        },
+        {
+            "id": "london-eye",
+            "canonicalName": "London Eye",
+            "category": "attraction",
+            "latitude": 51.5033,
+            "longitude": -0.1196,
+            "zone": 1,
+            "searchTerms": [
+                "London Eye",
+                "South Bank",
+                "attraction"
+            ]
+        },
+        {
+            "id": "tate-modern",
+            "canonicalName": "Tate Modern",
+            "category": "museum",
+            "latitude": 51.5076,
+            "longitude": -0.0994,
+            "zone": 1,
+            "searchTerms": [
+                "Tate Modern",
+                "gallery",
+                "Bankside"
+            ]
+        }
+    ]
+}

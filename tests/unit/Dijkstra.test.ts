@@ -39,3 +39,14 @@ test('Dijkstra returns null when no route exists', () => {
     const result = router.findShortestPath(disconnectedGraph, 'waterloo', 'euston');
     assert.equal(result, null);
 });
+
+test('Dijkstra returns a zero-cost path when origin and destination are identical', () => {
+    const router = new Dijkstra();
+    const result = router.findShortestPath(graph, 'waterloo', 'waterloo');
+
+    assert.deepEqual(result, {
+        cost: 0,
+        path: ['waterloo'],
+        visited: ['waterloo'],
+    });
+});
