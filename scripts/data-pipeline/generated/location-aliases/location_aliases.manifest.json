@@ -4,5 +4,7 @@
   "seedPath": "scripts/data-pipeline/generated/location-aliases/location_aliases.seed.sql",
   "seedCount": 19,
   "sourceFixture": "scripts/prompt-validation/fixtures/stations.json",
-  "assemblyHint": "Use a later SQLite assembly step to execute location_aliases.schema.sql and location_aliases.seed.sql into a binary location_aliases.db artifact."
+  "artifactPath": "assets/data/location_aliases.db",
+  "assemblyCommand": "npm run stage2:assemble",
+  "assemblyHint": "Run the SQLite assembly step to create a local fixture-based location_aliases.db artifact with FTS tables."
 }

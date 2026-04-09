@@ -54,5 +54,6 @@ temp/
 *.swo
 
 # Assets / generated data you may not want in git
+assets/data/*.db
 *.db-shm
 *.db-wal

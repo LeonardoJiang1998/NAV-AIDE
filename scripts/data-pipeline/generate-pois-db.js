@@ -41,7 +41,9 @@ const manifest = {
     schemaPath: relativeToRepo(schemaPath),
     seedPath: relativeToRepo(seedSqlPath),
     seedCount: seeds.length,
-    assemblyHint: 'Use a later SQLite assembly step to execute pois.schema.sql and pois.seed.sql into a binary pois.db artifact.',
+    artifactPath: 'assets/data/pois.db',
+    assemblyCommand: 'npm run stage2:assemble',
+    assemblyHint: 'Run the SQLite assembly step to create a local fixture-based pois.db artifact with FTS tables.',
 };
 
 fs.writeFileSync(schemaPath, `${schemaSql}\n`);

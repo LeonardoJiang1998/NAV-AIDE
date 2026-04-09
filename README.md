@@ -23,10 +23,22 @@ Install dependencies:
 npm install
 ```
 
-Generate the deterministic offline data scaffolds:
+Generate the deterministic fixture-based JSON assets and SQL scaffolds:
 
 ```bash
-npm run stage2:data
+npm run stage2:sql
+```
+
+Assemble real local SQLite artifacts from the generated SQL:
+
+```bash
+npm run stage2:assemble
+```
+
+Validate the assembled DB files, FTS tables, seed rows, and DB-backed EntityResolver path:
+
+```bash
+npm run stage2:validate
 ```
 
 Compile and run the Node-first verification path:
@@ -48,21 +60,27 @@ Fully implemented in this repo:
 - `src/core/routing/Dijkstra.ts`
 - `src/core/poi/FuzzyMatcher.ts`
 - `src/core/pipeline/EntityResolver.ts`
+- `src/core/pipeline/SqliteEntityRecordLoader.ts`
 - Node-testable unit coverage for Dijkstra and EntityResolver
 - local fixture assets for `tubeGraph.json` and `busRoutes.json`
 - generation scaffolds for `pois.db` and `location_aliases.db`
+- repeatable local assembly of `assets/data/pois.db` and `assets/data/location_aliases.db`
+- validation of tables, FTS tables, seed rows, and DB-backed resolution
 
-Scaffolded only in this stage:
+Fixture-based but fully buildable in this stage:
 
-- `pois.db` and `location_aliases.db` are emitted as schema-plus-seed SQL scaffolds, not packaged binary SQLite files
+- `assets/tubeGraph.json` and `assets/busRoutes.json` are deterministic London fixtures rather than full licensed production network exports
+- `assets/data/pois.db` and `assets/data/location_aliases.db` are real SQLite files built locally from deterministic fixture SQL scaffolds
+
+Still scaffolded only in this stage:
+
 - `london.mbtiles` and `valhalla_tiles/` remain declared offline assets pending later ingestion work
-- Tube and bus assets use deterministic London fixture seeds rather than full production network exports
 
 Still requiring external data or manual setup later:
 
 - full licensed/offline transport datasets
 - curated POI export ingestion for SQLite FTS5
-- final SQLite assembly of generated SQL into shipping `.db` files
+- production-grade assembly/packaging of those assets into mobile shipping bundles
 
 ## Stage 2 Commands
 
@@ -73,6 +91,8 @@ node scripts/data-pipeline/build-tube-graph.js
 node scripts/data-pipeline/generate-bus-routes.js
 node scripts/data-pipeline/generate-pois-db.js
 node scripts/data-pipeline/generate-location-aliases-db.js
+node scripts/data-pipeline/assemble-sqlite-dbs.js
+tsx scripts/data-pipeline/validate-sqlite-dbs.ts
 npm run build
 npm test
 ```

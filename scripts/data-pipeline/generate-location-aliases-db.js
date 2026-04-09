@@ -31,7 +31,9 @@ const manifest = {
     seedPath: relativeToRepo(seedSqlPath),
     seedCount: aliasRows.length,
     sourceFixture: relativeToRepo(stationsPath),
-    assemblyHint: 'Use a later SQLite assembly step to execute location_aliases.schema.sql and location_aliases.seed.sql into a binary location_aliases.db artifact.',
+    artifactPath: 'assets/data/location_aliases.db',
+    assemblyCommand: 'npm run stage2:assemble',
+    assemblyHint: 'Run the SQLite assembly step to create a local fixture-based location_aliases.db artifact with FTS tables.',
 };
 
 fs.writeFileSync(schemaPath, `${schemaSql}\n`);
