@@ -29,6 +29,7 @@ Use this skill when the request includes any of these intents:
 - implement the next phase
 - scaffold the mobile app
 - work on phase 0, 1, 2, 3, or 4
+- work on phase 5
 - finish the offline-first app foundation
 - update the NAV AiDE GitHub Pages site without touching mobile code
 
@@ -65,6 +66,7 @@ Never violate these rules:
    - Phase 2 is unfinished if `QueryPipeline`, `IntentExtractor`, `ResponseRenderer`, `POIService`, `ValhallaBridge`, disruption/cache interfaces, analytics modules, or `tests/golden/` are missing.
    - Phase 3 is unfinished if the bare React Native TypeScript shell, 4-tab navigation, download scaffolding, map integration points, or `llama.rn` model-loading skeleton are missing.
    - Phase 4 is unfinished if GO, LOST?, Maps, and Settings MVP flows are not wired end to end with required error states.
+   - Phase 5 is unfinished if offline asset downloads are still placeholder-only, `llama.rn` is not loading the local model for real, OS STT or OS TTS are still stubbed, or required offline shell state does not persist across app restarts.
 
 4. Open the authoritative prompt for the chosen phase.
    - Phase 0: `.github/prompts/nav-aide-phase-0.prompt.md`
@@ -72,6 +74,7 @@ Never violate these rules:
    - Phase 2: `.github/prompts/nav-aide-phase-2.prompt.md`
    - Phase 3: `.github/prompts/nav-aide-phase-3.prompt.md`
    - Phase 4: `.github/prompts/nav-aide-phase-4.prompt.md`
+   - Phase 5: `.github/prompts/nav-aide-phase-5.prompt.md`
    - Docs site only: `.github/instructions/docs.instructions.md`
 
 5. Implement only the selected phase.
@@ -107,6 +110,7 @@ Never violate these rules:
 - Phase 2: pipeline modules compile, the golden test framework exists, and hallucinated place names are asserted against.
 - Phase 3: the app shell builds, 4 tabs exist, download flow is scaffolded, and model/map integration paths exist.
 - Phase 4: the four MVP menus are functional, end-to-end flows exist, and required UI error states are wired.
+- Phase 5: offline asset downloads are real, `llama.rn` loads the local model, OS STT and OS TTS are wired, and required shell state persists locally.
 
 ## Output Style
 

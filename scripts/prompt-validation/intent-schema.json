@@ -1,0 +1,64 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "NavAideIntentExtraction",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "detectedLanguage",
+        "intent",
+        "origin",
+        "destination",
+        "poiQuery",
+        "requiresDisambiguation",
+        "rawQuery"
+    ],
+    "properties": {
+        "detectedLanguage": {
+            "type": "string",
+            "enum": [
+                "English",
+                "Mandarin",
+                "Spanish",
+                "French",
+                "Arabic",
+                "Other"
+            ]
+        },
+        "intent": {
+            "type": "string",
+            "enum": [
+                "route",
+                "nearest_station",
+                "poi_lookup",
+                "lost_help",
+                "fare",
+                "unknown"
+            ]
+        },
+        "origin": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "destination": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "poiQuery": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "requiresDisambiguation": {
+            "type": "boolean"
+        },
+        "rawQuery": {
+            "type": "string",
+            "minLength": 1
+        }
+    }
+}

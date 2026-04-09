@@ -1,0 +1,33 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "QueryPipelineGoldenResult",
+    "type": "object",
+    "required": [
+        "status",
+        "extraction",
+        "disruptions",
+        "rendered"
+    ],
+    "properties": {
+        "status": {
+            "type": "string",
+            "enum": [
+                "complete",
+                "needs_disambiguation",
+                "unresolved"
+            ]
+        },
+        "extraction": {
+            "type": "object"
+        },
+        "disruptions": {
+            "type": "array"
+        },
+        "rendered": {
+            "type": [
+                "object",
+                "null"
+            ]
+        }
+    }
+}

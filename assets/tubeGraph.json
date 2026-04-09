@@ -1,0 +1,61 @@
+{
+    "schemaVersion": 1,
+    "fixtureStrategy": {
+        "description": "Use a small London Tube subgraph for Node tests and local validation, then replace with the generated full-network export during later phases.",
+        "sourceOfTruth": "scripts/data-pipeline/build-tube-graph.js",
+        "requiredFields": [
+            "nodes",
+            "edges",
+            "lineId",
+            "travelMinutes"
+        ]
+    },
+    "nodes": [
+        {
+            "id": "waterloo",
+            "name": "Waterloo",
+            "zone": 1
+        },
+        {
+            "id": "westminster",
+            "name": "Westminster",
+            "zone": 1
+        },
+        {
+            "id": "green-park",
+            "name": "Green Park",
+            "zone": 1
+        },
+        {
+            "id": "baker-street",
+            "name": "Baker Street",
+            "zone": 1
+        }
+    ],
+    "edges": [
+        {
+            "from": "waterloo",
+            "to": "westminster",
+            "lineId": "jubilee",
+            "travelMinutes": 2
+        },
+        {
+            "from": "westminster",
+            "to": "green-park",
+            "lineId": "jubilee",
+            "travelMinutes": 2
+        },
+        {
+            "from": "green-park",
+            "to": "baker-street",
+            "lineId": "jubilee",
+            "travelMinutes": 4
+        },
+        {
+            "from": "waterloo",
+            "to": "green-park",
+            "lineId": "bakerloo",
+            "travelMinutes": 6
+        }
+    ]
+}

@@ -1,124 +1,215 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="NAV-AIDE is an offline-first AI travel assistant for navigating London public transport."
-    />
-    <title>NAV-AIDE | Your AI London guide</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <header class="hero">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="NAV AiDE is a multilingual, offline-first London travel assistant for international tourists." />
+  <title>NAV AiDE | Your AI London guide. Works underground.</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="page-shell">
+    <header class="hero" id="top">
       <nav class="nav" aria-label="Main navigation">
-        <a class="brand" href="#top">NAV-AIDE</a>
+        <a class="brand" href="#top">NAV AiDE</a>
         <div class="nav-links">
+          <a href="#problem">Problem</a>
+          <a href="#solution">Solution</a>
           <a href="#features">Features</a>
-          <a href="#preview">Preview</a>
-          <a href="#status">Status</a>
+          <a href="#signup">Coming soon</a>
         </div>
       </nav>
 
-      <section id="top" class="hero-content">
-        <p class="eyebrow">Offline-first London travel assistant</p>
-        <h1>Your AI London guide. Works underground.</h1>
-        <p class="hero-copy">
-          NAV-AIDE helps tourists navigate London public transport with offline
-          maps, local routing, multilingual search, and on-device AI support.
-        </p>
-        <div class="hero-actions">
-          <a class="button primary" href="#features">Explore features</a>
-          <a class="button secondary" href="#status">Coming soon</a>
+      <section class="hero-grid">
+        <div class="hero-copy-block">
+          <p class="eyebrow">Offline-first London travel assistant</p>
+          <h1>Your AI London guide. Works underground.</h1>
+          <p class="lead">
+            Ask in your own language, keep London place names grounded in
+            English, and stay oriented when the signal drops. NAV AiDE is
+            built for tourists who need local guidance instead of map-only
+            guesswork.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#features">See the MVP</a>
+            <a class="button secondary" href="#signup">Join the waitlist</a>
+          </div>
+          <ul class="hero-points" aria-label="Product highlights">
+            <li>140+ languages</li>
+            <li>Offline maps</li>
+            <li>Door-to-door directions</li>
+            <li>LOST? helper</li>
+          </ul>
+          <div class="proof-strip" aria-label="Why NAV AiDE is different">
+            <article>
+              <span>Grounded</span>
+              <strong>Local stations and POIs</strong>
+            </article>
+            <article>
+              <span>Resilient</span>
+              <strong>Designed for underground travel</strong>
+            </article>
+            <article>
+              <span>Practical</span>
+              <strong>Built for recovery, not just search</strong>
+            </article>
+          </div>
         </div>
+
+        <aside class="hero-panel" aria-label="NAV AiDE product snapshot">
+          <p class="panel-label">Designed for the moments maps alone are not enough</p>
+          <div class="signal-card">
+            <span class="signal-state">Underground mode</span>
+            <strong>Signal dropped. Guidance stayed local.</strong>
+            <p>
+              Routing, place matching, and response rendering are designed to
+              keep working from downloaded assets instead of depending on a
+              live connection at the exact moment a visitor needs help.
+            </p>
+          </div>
+          <div class="mini-grid">
+            <article>
+              <span>Input</span>
+              <strong>Text + OS speech</strong>
+            </article>
+            <article>
+              <span>Grounding</span>
+              <strong>Local indices only</strong>
+            </article>
+            <article>
+              <span>Maps</span>
+              <strong>Offline layers</strong>
+            </article>
+            <article>
+              <span>Recovery</span>
+              <strong>Ask People + LOST?</strong>
+            </article>
+          </div>
+        </aside>
       </section>
     </header>
 
     <main>
-      <section class="section split">
+      <section class="section section-split" id="problem">
         <div>
-          <p class="eyebrow">Problem</p>
-          <h2>Visitors lose signal when they need help most.</h2>
+          <p class="eyebrow">Problem statement</p>
+          <h2>Tourists hit dead zones exactly when London becomes hard to read.</h2>
         </div>
         <p>
-          Public transport navigation can break down inside stations, tunnels,
-          and crowded tourist areas. NAV-AIDE is designed for those low-signal
-          moments, keeping key travel guidance available locally on the device.
+          Traditional map apps assume a stable connection and a user who can
+          already decode station signage, route changes, and local place names.
+          That breaks down underground, in crowded interchanges, and when a
+          visitor needs help in their own language.
         </p>
       </section>
 
-      <section class="section split">
+      <section class="section section-split" id="solution">
         <div>
-          <p class="eyebrow">Solution</p>
-          <h2>Local maps, local routing, and on-device assistance.</h2>
+          <p class="eyebrow">Solution overview</p>
+          <h2>A London guide that keeps its travel brain on the device.</h2>
         </div>
         <p>
-          The MVP is planned around offline assets, local station and POI
-          resolution, OS speech input and output, and on-device LLM inference.
-          The goal is to help users search, route, and recover when they are
-          unsure where to go next.
+          NAV AiDE combines offline assets, local entity resolution, on-device
+          response generation, and transport-specific routing so the MVP can
+          keep working when the network does not. It is focused on guidance,
+          recovery, and clarity instead of generic search results.
         </p>
       </section>
 
-      <section id="features" class="section">
+      <section class="section" id="features">
         <p class="eyebrow">Feature highlights</p>
-        <h2>Built for London travel.</h2>
-        <div class="cards">
-          <article class="card">
+        <h2>Built for real London travel.</h2>
+        <div class="feature-grid">
+          <article class="feature-card accent-aqua">
             <h3>140+ languages</h3>
-            <p>Designed for multilingual travel queries from international visitors.</p>
+            <p>
+              Designed for multilingual tourist queries while keeping London
+              place names grounded in original English.
+            </p>
+            <span class="feature-meta">Clarity without renaming the city around you.</span>
           </article>
-          <article class="card">
+          <article class="feature-card accent-gold">
             <h3>Offline maps</h3>
-            <p>Planned MapLibre and MBTiles support for local map rendering.</p>
+            <p>
+              Mobile map views are planned around local assets so guidance can
+              continue underground and in low-signal areas.
+            </p>
+            <span class="feature-meta">Useful when the platform has signal problems too.</span>
           </article>
-          <article class="card">
+          <article class="feature-card accent-ink">
             <h3>Door-to-door directions</h3>
-            <p>Local routing assets support public transport navigation flows.</p>
+            <p>
+              The MVP route flow combines London transport routing with offline
+              walking guidance rather than relying on generic map search.
+            </p>
+            <span class="feature-meta">Transport-specific logic, not one-size-fits-all routing.</span>
           </article>
-          <article class="card">
+          <article class="feature-card accent-mint">
             <h3>LOST? helper</h3>
-            <p>Resolve station signs, aliases, and nearby clues when users feel stuck.</p>
+            <p>
+              Resolve station clues, ask for help, and recover safely when a
+              sign, transcript, or place match is ambiguous.
+            </p>
+            <span class="feature-meta">Built for the exact moment a tourist stops feeling sure.</span>
           </article>
         </div>
       </section>
 
-      <section id="preview" class="section preview">
+      <section class="section preview-grid" id="preview">
         <div>
-          <p class="eyebrow">Preview</p>
-          <h2>Mobile app mockup placeholder</h2>
+          <p class="eyebrow">App preview</p>
+          <h2>What the first release is shaping toward.</h2>
           <p>
-            Screenshots and product visuals will be added as the React Native
-            MVP shell and feature flows are implemented.
+            The shell already covers GO, LOST?, Maps, and Settings. This
+            preview block reserves the production screenshot slot while the
+            native runtime and offline asset flows move from scaffold to fully
+            integrated behavior.
           </p>
+          <ul class="preview-notes" aria-label="Preview highlights">
+            <li>GO for route search, transport choice, and spoken playback</li>
+            <li>LOST? for signpost recovery and Ask People normalization</li>
+            <li>Maps for offline layers and navigate-here handoff</li>
+          </ul>
         </div>
-        <div class="phone" aria-label="NAV-AIDE app preview placeholder">
-          <div class="phone-bar"></div>
-          <h3>Where are you going?</h3>
-          <p>Ask by text or voice.</p>
-          <div class="route-card">King's Cross to Westminster</div>
-          <div class="route-card muted">Offline route ready</div>
-        </div>
+        <figure class="mockup-card">
+          <img src="assets/app-preview-placeholder.svg" alt="NAV AiDE mobile app placeholder illustration" />
+        </figure>
       </section>
 
-      <section id="status" class="section signup">
+      <section class="section signup-panel" id="signup">
         <p class="eyebrow">Coming soon</p>
-        <h2>NAV-AIDE is in early MVP development.</h2>
+        <h2>Request launch updates.</h2>
         <p>
-          The current repository contains the project plan, Copilot build
-          prompts, and the first static site scaffold. Email signup will be
-          added later.
+          This is still a placeholder form, but the section is now framed for
+          the real launch flow: product updates, early-access announcements,
+          and release timing for the first public build.
         </p>
+        <form class="signup-form" action="#" method="get">
+          <label class="sr-only" for="email">Email address</label>
+          <input id="email" name="email" type="email" placeholder="name@example.com"
+            aria-label="Email signup placeholder" />
+          <button type="submit">Request updates</button>
+        </form>
+        <p class="signup-note">No mailing workflow is connected in this MVP site yet.</p>
       </section>
     </main>
 
     <footer class="footer">
-      <p>&copy; 2026 AiDEMAIN Ltd. NAV-AIDE is under active development.</p>
-      <p>
-        Mapping, routing, transport data, and model attributions will be added
-        as production assets are integrated.
-      </p>
+      <div>
+        <p class="footer-kicker">Offline-first London travel guidance for international visitors.</p>
+        <p>AiDEMAIN Ltd.</p>
+        <p>© OpenStreetMap contributors</p>
+        <p>Powered by TfL Open Data</p>
+      </div>
+      <div class="footer-links">
+        <a href="#">Privacy policy placeholder</a>
+        <a href="#">Terms placeholder</a>
+      </div>
     </footer>
-  </body>
+  </div>
+</body>
+
 </html>

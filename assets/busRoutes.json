@@ -1,0 +1,14 @@
+{
+    "schemaVersion": 1,
+    "routes": [
+        {
+            "routeId": "rv1",
+            "displayName": "RV1 Sample",
+            "stops": [
+                "Waterloo",
+                "Covent Garden",
+                "Tower Gateway"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,25 @@
+[
+    {
+        "id": "route-waterloo-baker-street",
+        "rawQuery": "How do I get from Waterloo to Baker Street?",
+        "expectedStatus": "complete",
+        "expectedIntent": "route",
+        "expectedRenderedText": "Route from Waterloo to Baker Street costs 8 minutes.",
+        "allowedPlaceNames": [
+            "Waterloo",
+            "Westminster",
+            "Green Park",
+            "Baker Street"
+        ]
+    },
+    {
+        "id": "poi-british-museum",
+        "rawQuery": "Find the British Museum",
+        "expectedStatus": "complete",
+        "expectedIntent": "poi_lookup",
+        "expectedRenderedText": "POI match: British Museum.",
+        "allowedPlaceNames": [
+            "British Museum"
+        ]
+    }
+]

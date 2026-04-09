@@ -46,7 +46,8 @@ This kit gives you all of them in a way that fits NAV AiDE's phased build approa
 3. `nav-aide-phase-2.prompt.md`
 4. `nav-aide-phase-3.prompt.md`
 5. `nav-aide-phase-4.prompt.md`
-6. `nav-aide-github-pages.prompt.md`
+6. `nav-aide-phase-5.prompt.md`
+7. `nav-aide-github-pages.prompt.md`
 
 ## Notes
 

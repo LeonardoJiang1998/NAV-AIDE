@@ -49,6 +49,7 @@ local.properties
 # Temporary
 tmp/
 temp/
+.artifacts/
 *.swp
 *.swo
 

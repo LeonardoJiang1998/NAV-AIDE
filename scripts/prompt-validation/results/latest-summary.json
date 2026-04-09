@@ -1,0 +1,10 @@
+{
+  "runner": "mock",
+  "model": null,
+  "totalSeeds": 30,
+  "passed": 30,
+  "failed": 0,
+  "schemaTitle": "NavAideIntentExtraction",
+  "stationsLoaded": 14,
+  "failures": []
+}

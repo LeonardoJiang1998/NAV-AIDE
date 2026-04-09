@@ -1,0 +1,362 @@
+[
+    {
+        "id": "en-01",
+        "query": "How do I get from Waterloo to Baker Street?",
+        "expected": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": "Baker Street",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "en-02",
+        "query": "Where is the nearest Tube station?",
+        "expected": {
+            "detectedLanguage": "English",
+            "intent": "nearest_station",
+            "origin": null,
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "en-03",
+        "query": "Find the British Museum",
+        "expected": {
+            "detectedLanguage": "English",
+            "intent": "poi_lookup",
+            "origin": null,
+            "destination": null,
+            "poiQuery": "British Museum",
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "en-04",
+        "query": "I'm lost near Bank station",
+        "expected": {
+            "detectedLanguage": "English",
+            "intent": "lost_help",
+            "origin": "Bank",
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "en-05",
+        "query": "How much is the fare from Paddington to Victoria?",
+        "expected": {
+            "detectedLanguage": "English",
+            "intent": "fare",
+            "origin": "Paddington",
+            "destination": "Victoria",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "en-06",
+        "query": "Take me to Park",
+        "expected": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": null,
+            "destination": "Park",
+            "poiQuery": null,
+            "requiresDisambiguation": true
+        }
+    },
+    {
+        "id": "zh-01",
+        "query": "怎么从Waterloo到Baker Street？",
+        "expected": {
+            "detectedLanguage": "Mandarin",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": "Baker Street",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "zh-02",
+        "query": "最近的地铁站在哪里？",
+        "expected": {
+            "detectedLanguage": "Mandarin",
+            "intent": "nearest_station",
+            "origin": null,
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "zh-03",
+        "query": "帮我找British Museum",
+        "expected": {
+            "detectedLanguage": "Mandarin",
+            "intent": "poi_lookup",
+            "origin": null,
+            "destination": null,
+            "poiQuery": "British Museum",
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "zh-04",
+        "query": "我在Bank站附近迷路了",
+        "expected": {
+            "detectedLanguage": "Mandarin",
+            "intent": "lost_help",
+            "origin": "Bank",
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "zh-05",
+        "query": "从Paddington到Victoria多少钱？",
+        "expected": {
+            "detectedLanguage": "Mandarin",
+            "intent": "fare",
+            "origin": "Paddington",
+            "destination": "Victoria",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "zh-06",
+        "query": "带我去Park",
+        "expected": {
+            "detectedLanguage": "Mandarin",
+            "intent": "route",
+            "origin": null,
+            "destination": "Park",
+            "poiQuery": null,
+            "requiresDisambiguation": true
+        }
+    },
+    {
+        "id": "es-01",
+        "query": "Como voy de Waterloo a Baker Street?",
+        "expected": {
+            "detectedLanguage": "Spanish",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": "Baker Street",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "es-02",
+        "query": "Donde esta la estacion de metro mas cercana?",
+        "expected": {
+            "detectedLanguage": "Spanish",
+            "intent": "nearest_station",
+            "origin": null,
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "es-03",
+        "query": "Busca British Museum",
+        "expected": {
+            "detectedLanguage": "Spanish",
+            "intent": "poi_lookup",
+            "origin": null,
+            "destination": null,
+            "poiQuery": "British Museum",
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "es-04",
+        "query": "Estoy perdido cerca de Bank",
+        "expected": {
+            "detectedLanguage": "Spanish",
+            "intent": "lost_help",
+            "origin": "Bank",
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "es-05",
+        "query": "Cuanto cuesta ir de Paddington a Victoria?",
+        "expected": {
+            "detectedLanguage": "Spanish",
+            "intent": "fare",
+            "origin": "Paddington",
+            "destination": "Victoria",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "es-06",
+        "query": "Llevame a Park",
+        "expected": {
+            "detectedLanguage": "Spanish",
+            "intent": "route",
+            "origin": null,
+            "destination": "Park",
+            "poiQuery": null,
+            "requiresDisambiguation": true
+        }
+    },
+    {
+        "id": "fr-01",
+        "query": "Comment aller de Waterloo a Baker Street ?",
+        "expected": {
+            "detectedLanguage": "French",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": "Baker Street",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "fr-02",
+        "query": "Ou est la station de metro la plus proche ?",
+        "expected": {
+            "detectedLanguage": "French",
+            "intent": "nearest_station",
+            "origin": null,
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "fr-03",
+        "query": "Trouve British Museum",
+        "expected": {
+            "detectedLanguage": "French",
+            "intent": "poi_lookup",
+            "origin": null,
+            "destination": null,
+            "poiQuery": "British Museum",
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "fr-04",
+        "query": "Je suis perdu pres de Bank",
+        "expected": {
+            "detectedLanguage": "French",
+            "intent": "lost_help",
+            "origin": "Bank",
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "fr-05",
+        "query": "Quel est le tarif de Paddington a Victoria ?",
+        "expected": {
+            "detectedLanguage": "French",
+            "intent": "fare",
+            "origin": "Paddington",
+            "destination": "Victoria",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "fr-06",
+        "query": "Emmene-moi a Park",
+        "expected": {
+            "detectedLanguage": "French",
+            "intent": "route",
+            "origin": null,
+            "destination": "Park",
+            "poiQuery": null,
+            "requiresDisambiguation": true
+        }
+    },
+    {
+        "id": "ar-01",
+        "query": "كيف اذهب من Waterloo الى Baker Street؟",
+        "expected": {
+            "detectedLanguage": "Arabic",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": "Baker Street",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "ar-02",
+        "query": "اين اقرب محطة مترو؟",
+        "expected": {
+            "detectedLanguage": "Arabic",
+            "intent": "nearest_station",
+            "origin": null,
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "ar-03",
+        "query": "ابحث عن British Museum",
+        "expected": {
+            "detectedLanguage": "Arabic",
+            "intent": "poi_lookup",
+            "origin": null,
+            "destination": null,
+            "poiQuery": "British Museum",
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "ar-04",
+        "query": "انا تائه قرب Bank",
+        "expected": {
+            "detectedLanguage": "Arabic",
+            "intent": "lost_help",
+            "origin": "Bank",
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "ar-05",
+        "query": "كم تكلفة الرحلة من Paddington الى Victoria؟",
+        "expected": {
+            "detectedLanguage": "Arabic",
+            "intent": "fare",
+            "origin": "Paddington",
+            "destination": "Victoria",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        }
+    },
+    {
+        "id": "ar-06",
+        "query": "خذني الى Park",
+        "expected": {
+            "detectedLanguage": "Arabic",
+            "intent": "route",
+            "origin": null,
+            "destination": "Park",
+            "poiQuery": null,
+            "requiresDisambiguation": true
+        }
+    }
+]
