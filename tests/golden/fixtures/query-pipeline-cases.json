@@ -2,9 +2,54 @@
     {
         "id": "route-waterloo-baker-street",
         "rawQuery": "How do I get from Waterloo to Baker Street?",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": "Baker Street",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
         "expectedStatus": "complete",
         "expectedIntent": "route",
         "expectedRenderedText": "Route from Waterloo to Baker Street costs 8 minutes.",
+        "expectedRouteCost": 8,
+        "expectedWalkingStatus": "ok",
+        "expectedDisruptionIds": [
+            "line-jubilee-baker-street",
+            "station-green-park"
+        ],
+        "expectedOriginStatus": "resolved",
+        "expectedDestinationStatus": "resolved",
+        "allowedPlaceNames": [
+            "Waterloo",
+            "Westminster",
+            "Green Park",
+            "Baker Street"
+        ]
+    },
+    {
+        "id": "fare-waterloo-baker-street",
+        "rawQuery": "What is the fare from Waterloo to Baker Street?",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "fare",
+            "origin": "Waterloo",
+            "destination": "Baker Street",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "complete",
+        "expectedIntent": "fare",
+        "expectedRenderedText": "Route from Waterloo to Baker Street costs 8 minutes.",
+        "expectedRouteCost": 8,
+        "expectedWalkingStatus": "ok",
+        "expectedDisruptionIds": [
+            "line-jubilee-baker-street",
+            "station-green-park"
+        ],
+        "expectedOriginStatus": "resolved",
+        "expectedDestinationStatus": "resolved",
         "allowedPlaceNames": [
             "Waterloo",
             "Westminster",
@@ -15,11 +60,132 @@
     {
         "id": "poi-british-museum",
         "rawQuery": "Find the British Museum",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "poi_lookup",
+            "origin": null,
+            "destination": null,
+            "poiQuery": "British Museum",
+            "requiresDisambiguation": false
+        },
         "expectedStatus": "complete",
         "expectedIntent": "poi_lookup",
         "expectedRenderedText": "POI match: British Museum.",
+        "expectedPoiNames": [
+            "British Museum"
+        ],
+        "expectedDisruptionIds": [
+            "poi-british-museum"
+        ],
+        "expectedWalkingStatus": null,
         "allowedPlaceNames": [
             "British Museum"
         ]
+    },
+    {
+        "id": "nearest-station-green-park",
+        "rawQuery": "Where is Green Park station?",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "nearest_station",
+            "origin": "Green Park",
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "complete",
+        "expectedIntent": "nearest_station",
+        "expectedRenderedText": "nearest_station match at Green Park.",
+        "expectedDisruptionIds": [
+            "station-green-park"
+        ],
+        "expectedOriginStatus": "resolved",
+        "expectedWalkingStatus": null,
+        "allowedPlaceNames": [
+            "Green Park"
+        ]
+    },
+    {
+        "id": "lost-help-baker-st",
+        "rawQuery": "I am lost near Baker St",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "lost_help",
+            "origin": "Baker St",
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "complete",
+        "expectedIntent": "lost_help",
+        "expectedRenderedText": "lost_help match at Baker Street.",
+        "expectedDisruptionIds": [
+            "line-jubilee-baker-street"
+        ],
+        "expectedOriginStatus": "resolved",
+        "expectedWalkingStatus": null,
+        "allowedPlaceNames": [
+            "Baker Street"
+        ]
+    },
+    {
+        "id": "route-park-needs-disambiguation",
+        "rawQuery": "Take me from Waterloo to Park",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": "Park",
+            "poiQuery": null,
+            "requiresDisambiguation": true
+        },
+        "expectedStatus": "needs_disambiguation",
+        "expectedIntent": "route",
+        "expectedRenderedText": null,
+        "expectedOriginStatus": "resolved",
+        "expectedDestinationStatus": "disambiguation",
+        "expectedWalkingStatus": null,
+        "allowedPlaceNames": []
+    },
+    {
+        "id": "route-waterloo-canary-wharf-unresolved",
+        "rawQuery": "How do I get from Waterloo to Canary Wharf?",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": "Canary Wharf",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "unresolved",
+        "expectedIntent": "route",
+        "expectedRenderedText": "No route found from Waterloo to Canary Wharf.",
+        "expectedRouteCost": null,
+        "expectedWalkingStatus": "ok",
+        "expectedOriginStatus": "resolved",
+        "expectedDestinationStatus": "resolved",
+        "allowedPlaceNames": [
+            "Waterloo",
+            "Canary Wharf"
+        ]
+    },
+    {
+        "id": "poi-atlantis-unresolved",
+        "rawQuery": "Find Atlantis Museum",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "poi_lookup",
+            "origin": null,
+            "destination": null,
+            "poiQuery": "Atlantis Museum",
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "unresolved",
+        "expectedIntent": "poi_lookup",
+        "expectedRenderedText": null,
+        "expectedPoiNames": [],
+        "expectedWalkingStatus": null,
+        "allowedPlaceNames": []
     }
 ]

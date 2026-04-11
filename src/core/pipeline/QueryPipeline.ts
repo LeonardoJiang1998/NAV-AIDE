@@ -1,6 +1,7 @@
 import { EventLogger } from '../../analytics/EventLogger.js';
 import { IntentExtractor, type IntentExtraction } from '../llm/IntentExtractor.js';
 import { ResponseRenderer, type RenderedResponse } from '../llm/ResponseRenderer.js';
+import { FuzzyMatcher } from '../poi/FuzzyMatcher.js';
 import { type POIResult, POIService } from '../poi/POIService.js';
 import { Dijkstra, type ShortestPathResult, type WeightedGraph } from '../routing/Dijkstra.js';
 import { ValhallaBridge, type WalkingRouteResult } from '../routing/ValhallaBridge.js';
@@ -17,11 +18,13 @@ export interface QueryPipelineDependencies {
     disruptionService: CacheAwareDisruptionService;
     eventLogger: EventLogger;
     graph: WeightedGraph;
+    fuzzyMatcher?: FuzzyMatcher;
 }
 
 export interface QueryPipelineResult {
     status: 'complete' | 'needs_disambiguation' | 'unresolved';
     extraction: IntentExtraction;
+    fastPathHints?: string[];
     origin?: ResolutionResult;
     destination?: ResolutionResult;
     poiResults?: POIResult[];
@@ -35,8 +38,9 @@ export class QueryPipeline {
     public constructor(private readonly dependencies: QueryPipelineDependencies) { }
 
     public async execute(rawQuery: string, knownStations: string[]): Promise<QueryPipelineResult> {
-        const extraction = await this.dependencies.intentExtractor.extract(rawQuery, knownStations);
-        const result = await this.resolveIntent(extraction);
+        const fastPathHints = this.buildFastPathHints(rawQuery);
+        const extraction = await this.dependencies.intentExtractor.extract(rawQuery, knownStations, { fastPathHints });
+        const result = await this.resolveIntent(extraction, fastPathHints);
 
         this.dependencies.eventLogger.log({
             eventName: 'query_pipeline_completed',
@@ -45,42 +49,48 @@ export class QueryPipeline {
             payload: {
                 intent: extraction.intent,
                 status: result.status,
+                fastPathHints,
             },
         });
 
         return result;
     }
 
-    private async resolveIntent(extraction: IntentExtraction): Promise<QueryPipelineResult> {
+    private async resolveIntent(extraction: IntentExtraction, fastPathHints: string[]): Promise<QueryPipelineResult> {
         switch (extraction.intent) {
             case 'route':
             case 'fare':
-                return this.handleRouteIntent(extraction);
+                return this.handleRouteIntent(extraction, fastPathHints);
             case 'poi_lookup':
-                return this.handlePoiIntent(extraction);
+                return this.handlePoiIntent(extraction, fastPathHints);
             case 'nearest_station':
             case 'lost_help':
-                return this.handleLocationIntent(extraction);
+                return this.handleLocationIntent(extraction, fastPathHints);
             default:
                 return {
                     status: 'unresolved',
                     extraction,
+                    fastPathHints,
                     disruptions: [],
                     rendered: null,
                 };
         }
     }
 
-    private async handleRouteIntent(extraction: IntentExtraction): Promise<QueryPipelineResult> {
+    private async handleRouteIntent(extraction: IntentExtraction, fastPathHints: string[]): Promise<QueryPipelineResult> {
         const origin = extraction.origin ? this.dependencies.entityResolver.resolve(extraction.origin) : undefined;
         const destination = extraction.destination ? this.dependencies.entityResolver.resolve(extraction.destination) : undefined;
 
+        if (extraction.requiresDisambiguation) {
+            return { status: 'needs_disambiguation', extraction, fastPathHints, origin, destination, disruptions: [], rendered: null };
+        }
+
         if (!origin?.bestCandidate || !destination?.bestCandidate) {
-            return { status: 'unresolved', extraction, origin, destination, disruptions: [], rendered: null };
+            return { status: 'unresolved', extraction, fastPathHints, origin, destination, disruptions: [], rendered: null };
         }
 
         if (origin.status !== 'resolved' || destination.status !== 'resolved') {
-            return { status: 'needs_disambiguation', extraction, origin, destination, disruptions: [], rendered: null };
+            return { status: 'needs_disambiguation', extraction, fastPathHints, origin, destination, disruptions: [], rendered: null };
         }
 
         const route = this.dependencies.router.findShortestPath(
@@ -116,6 +126,7 @@ export class QueryPipeline {
         return {
             status: route ? 'complete' : 'unresolved',
             extraction,
+            fastPathHints,
             origin,
             destination,
             route,
@@ -125,10 +136,14 @@ export class QueryPipeline {
         };
     }
 
-    private async handlePoiIntent(extraction: IntentExtraction): Promise<QueryPipelineResult> {
+    private async handlePoiIntent(extraction: IntentExtraction, fastPathHints: string[]): Promise<QueryPipelineResult> {
         const poiResults = extraction.poiQuery ? this.dependencies.poiService.search(extraction.poiQuery) : [];
+        if (extraction.requiresDisambiguation) {
+            return { status: 'needs_disambiguation', extraction, fastPathHints, poiResults, disruptions: [], rendered: null };
+        }
+
         if (poiResults.length === 0) {
-            return { status: 'unresolved', extraction, poiResults, disruptions: [], rendered: null };
+            return { status: 'unresolved', extraction, fastPathHints, poiResults, disruptions: [], rendered: null };
         }
 
         const allowedPlaceNames = poiResults.map((result) => result.poi.canonicalName);
@@ -146,22 +161,27 @@ export class QueryPipeline {
         return {
             status: 'complete',
             extraction,
+            fastPathHints,
             poiResults,
             disruptions,
             rendered,
         };
     }
 
-    private async handleLocationIntent(extraction: IntentExtraction): Promise<QueryPipelineResult> {
+    private async handleLocationIntent(extraction: IntentExtraction, fastPathHints: string[]): Promise<QueryPipelineResult> {
         const targetQuery = extraction.origin ?? extraction.destination ?? extraction.poiQuery;
         const resolution = targetQuery ? this.dependencies.entityResolver.resolve(targetQuery) : undefined;
 
+        if (extraction.requiresDisambiguation) {
+            return { status: 'needs_disambiguation', extraction, fastPathHints, origin: resolution, disruptions: [], rendered: null };
+        }
+
         if (!resolution?.bestCandidate) {
-            return { status: 'unresolved', extraction, origin: resolution, disruptions: [], rendered: null };
+            return { status: 'unresolved', extraction, fastPathHints, origin: resolution, disruptions: [], rendered: null };
         }
 
         if (resolution.status !== 'resolved') {
-            return { status: 'needs_disambiguation', extraction, origin: resolution, disruptions: [], rendered: null };
+            return { status: 'needs_disambiguation', extraction, fastPathHints, origin: resolution, disruptions: [], rendered: null };
         }
 
         const allowedPlaceNames = [resolution.bestCandidate.entity.canonicalName];
@@ -179,6 +199,7 @@ export class QueryPipeline {
         return {
             status: 'complete',
             extraction,
+            fastPathHints,
             origin: resolution,
             disruptions,
             rendered,
@@ -196,12 +217,42 @@ export class QueryPipeline {
     }
 
     private findEntity(id: string): EntityRecord | null {
-        const resolver = this.dependencies.entityResolver as EntityResolver & { records?: EntityRecord[] };
-        const records = resolver['records'] as EntityRecord[] | undefined;
-        return records?.find((record) => record.id === id) ?? null;
+        return this.dependencies.entityResolver.findById(id);
     }
 
     private collectAllowedPlaceNames(entities: EntityRecord[]): string[] {
         return [...new Set(entities.map((entity) => entity.canonicalName))];
+    }
+
+    private buildFastPathHints(rawQuery: string): string[] {
+        const matcher = this.dependencies.fuzzyMatcher ?? new FuzzyMatcher();
+        const normalizedQuery = matcher.normalize(rawQuery);
+
+        if (!normalizedQuery) {
+            return [];
+        }
+
+        const ranked = this.dependencies.entityResolver
+            .allRecords()
+            .map((record) => {
+                const values = [record.canonicalName, ...record.aliases];
+                const score = Math.max(
+                    ...values.map((value) => {
+                        const normalizedValue = matcher.normalize(value);
+                        if (normalizedValue && normalizedQuery.includes(normalizedValue)) {
+                            return 0.97;
+                        }
+
+                        return matcher.score(rawQuery, value);
+                    })
+                );
+
+                return { canonicalName: record.canonicalName, score };
+            })
+            .filter((candidate) => candidate.score >= 0.88)
+            .sort((left, right) => right.score - left.score)
+            .slice(0, 3);
+
+        return [...new Set(ranked.map((candidate) => candidate.canonicalName))];
     }
 }

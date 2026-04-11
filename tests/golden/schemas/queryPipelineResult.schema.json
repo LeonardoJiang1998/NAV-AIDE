@@ -17,13 +17,40 @@
                 "unresolved"
             ]
         },
+        "fastPathHints": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
         "extraction": {
-            "type": "object"
+            "type": "object",
+            "required": [
+                "detectedLanguage",
+                "intent",
+                "origin",
+                "destination",
+                "poiQuery",
+                "requiresDisambiguation",
+                "rawQuery"
+            ]
         },
         "disruptions": {
             "type": "array"
         },
         "rendered": {
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "route": {
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "walking": {
             "type": [
                 "object",
                 "null"

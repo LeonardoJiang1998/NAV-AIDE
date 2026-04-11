@@ -11,6 +11,7 @@ The repository currently includes:
 - Node-first offline data pipeline scaffolding under `scripts/data-pipeline/`
 - local routing and resolution modules under `src/core/`
 - unit tests for Dijkstra and EntityResolver under `tests/unit/`
+- integrated QueryPipeline golden coverage under `tests/golden/`
 - a static GitHub Pages intro site under `docs/`
 
 This stage does not add React Native screens or cloud-backed services.
@@ -61,7 +62,13 @@ Fully implemented in this repo:
 - `src/core/poi/FuzzyMatcher.ts`
 - `src/core/pipeline/EntityResolver.ts`
 - `src/core/pipeline/SqliteEntityRecordLoader.ts`
+- `src/core/pipeline/QueryPipeline.ts`
+- `src/core/llm/IntentExtractor.ts`
+- `src/core/llm/ResponseRenderer.ts`
+- `src/core/poi/POIService.ts`
+- `src/core/routing/ValhallaBridge.ts`
 - Node-testable unit coverage for Dijkstra and EntityResolver
+- golden-case integration coverage for route, fare, POI lookup, nearest-station, lost-help, disambiguation, and unresolved flows
 - local fixture assets for `tubeGraph.json` and `busRoutes.json`
 - generation scaffolds for `pois.db` and `location_aliases.db`
 - repeatable local assembly of `assets/data/pois.db` and `assets/data/location_aliases.db`
@@ -81,6 +88,7 @@ Still requiring external data or manual setup later:
 - full licensed/offline transport datasets
 - curated POI export ingestion for SQLite FTS5
 - production-grade assembly/packaging of those assets into mobile shipping bundles
+- native React Native shell, map, download, and voice integration from the next phase onward
 
 ## Stage 2 Commands
 

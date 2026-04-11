@@ -15,6 +15,10 @@ export interface StructuredJsonModelClient {
     generate<T>(request: { prompt: string; schema: object }): Promise<T>;
 }
 
+export interface IntentExtractionOptions {
+    fastPathHints?: string[];
+}
+
 export const INTENT_EXTRACTION_SCHEMA = {
     type: 'object',
     additionalProperties: false,
@@ -33,8 +37,8 @@ export const INTENT_EXTRACTION_SCHEMA = {
 export class IntentExtractor {
     public constructor(private readonly client: StructuredJsonModelClient) { }
 
-    public async extract(rawQuery: string, knownStations: string[]): Promise<IntentExtraction> {
-        const prompt = this.buildPrompt(rawQuery, knownStations);
+    public async extract(rawQuery: string, knownStations: string[], options: IntentExtractionOptions = {}): Promise<IntentExtraction> {
+        const prompt = this.buildPrompt(rawQuery, knownStations, options.fastPathHints ?? []);
         const result = await this.client.generate<IntentExtraction>({
             prompt,
             schema: INTENT_EXTRACTION_SCHEMA,
@@ -43,13 +47,19 @@ export class IntentExtractor {
         return validateIntentExtraction(result, rawQuery);
     }
 
-    private buildPrompt(rawQuery: string, knownStations: string[]): string {
-        return [
+    private buildPrompt(rawQuery: string, knownStations: string[], fastPathHints: string[]): string {
+        const lines = [
             'Extract structured NAV AiDE travel intent as JSON.',
             'Known station names:',
             knownStations.join(', '),
             `User query: ${rawQuery}`,
-        ].join('\n');
+        ];
+
+        if (fastPathHints.length > 0) {
+            lines.push('Local fast-path hints:', fastPathHints.join(', '));
+        }
+
+        return lines.join('\n');
     }
 }
 

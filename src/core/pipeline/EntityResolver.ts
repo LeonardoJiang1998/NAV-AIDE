@@ -99,6 +99,14 @@ export class EntityResolver {
         };
     }
 
+    public allRecords(): EntityRecord[] {
+        return [...this.records];
+    }
+
+    public findById(id: string): EntityRecord | null {
+        return this.records.find((record) => record.id === id) ?? null;
+    }
+
     private findAliasMatch(normalizedQuery: string): { record: EntityRecord; alias: string } | null {
         for (const record of this.records) {
             const alias = record.aliases.find((value) => this.matcher.normalize(value) === normalizedQuery);
