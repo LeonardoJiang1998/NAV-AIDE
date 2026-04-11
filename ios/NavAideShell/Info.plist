@@ -26,9 +26,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-	  <!-- Do not change NSAllowsArbitraryLoads to true, or you will risk app rejection! -->
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 		<key>NSAllowsLocalNetworking</key>
@@ -40,9 +41,9 @@
 	<string>NAV AiDE uses the microphone for on-device speech input through the OS speech recognizer.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>NAV AiDE uses OS speech recognition for offline-first spoken route and LOST? queries.</string>
-	<key>UIFileSharingEnabled</key>
+	<key>RCTNewArchEnabled</key>
 	<true/>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
