@@ -7,6 +7,7 @@
         "android": "react-native run-android",
         "ios": "react-native run-ios",
         "start": "react-native start",
+        "bundle:android": "react-native bundle --entry-file index.js --platform android --dev false --bundle-output .artifacts/index.android.bundle --assets-dest .artifacts/android",
         "bundle:ios": "react-native bundle --entry-file index.js --platform ios --dev false --bundle-output .artifacts/main.jsbundle --assets-dest .artifacts",
         "build": "tsc -p tsconfig.json",
         "test": "tsx --test tests/**/*.test.ts",
@@ -15,7 +16,8 @@
         "stage2:assemble": "node scripts/data-pipeline/assemble-sqlite-dbs.js",
         "stage2:validate": "tsx scripts/data-pipeline/validate-sqlite-dbs.ts",
         "stage2:assets": "npm run stage2:sql && npm run stage2:assemble && npm run stage2:validate",
-        "stage2:test": "npm run stage2:assets && npm run build && npm test"
+        "stage2:test": "npm run stage2:assets && npm run build && npm test",
+        "phase3a:verify": "npm run build && npm test && npm run bundle:ios && npm run bundle:android"
     },
     "dependencies": {
         "@maplibre/maplibre-react-native": "^10.1.34",

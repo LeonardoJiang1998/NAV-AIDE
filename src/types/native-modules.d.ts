@@ -25,5 +25,7 @@ declare module 'react-native-fs' {
 
 declare module 'llama.rn' {
     const llama: any;
+    export function initLlama(options: any, onProgress?: (progress: number) => void): Promise<any>;
+    export function loadLlamaModelInfo(path: string): Promise<any>;
     export default llama;
 }

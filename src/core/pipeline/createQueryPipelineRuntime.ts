@@ -1,13 +1,14 @@
-import { EventLogger } from '../../analytics/EventLogger.js';
-import { IntentExtractor } from '../llm/IntentExtractor.js';
-import { ResponseRenderer } from '../llm/ResponseRenderer.js';
-import { POIService, type POIRecord } from '../poi/POIService.js';
-import { EntityResolver, type EntityRecord } from './EntityResolver.js';
-import { QueryPipeline } from './QueryPipeline.js';
-import { Dijkstra, type WeightedGraph } from '../routing/Dijkstra.js';
-import { AssetAwareWalkingRouter, ValhallaBridge } from '../routing/ValhallaBridge.js';
-import { CacheAwareDisruptionService, StaticDisruptionSource, type DisruptionEvent } from '../services/DisruptionService.js';
-import type { NaturalLanguageRenderAdapter, StructuredIntentModelAdapter } from '../runtime/ModelAdapterContracts.js';
+import { EventLogger } from '../../analytics/EventLogger';
+import { IntentExtractor } from '../llm/IntentExtractor';
+import { ResponseRenderer } from '../llm/ResponseRenderer';
+import { POIService, type POIRecord } from '../poi/POIService';
+import { EntityResolver, type EntityRecord } from './EntityResolver';
+import { QueryPipeline } from './QueryPipeline';
+import { Dijkstra, type WeightedGraph } from '../routing/Dijkstra';
+import { AssetAwareWalkingRouter, ValhallaBridge } from '../routing/ValhallaBridge';
+import { CacheAwareDisruptionService, StaticDisruptionSource, type DisruptionEvent } from '../services/DisruptionService';
+import type { DeviceIdProvider } from '../runtime/DeviceIdContracts';
+import type { NaturalLanguageRenderAdapter, StructuredIntentModelAdapter } from '../runtime/ModelAdapterContracts';
 
 export interface QueryPipelineRuntimeAdapters {
     intentModel: StructuredIntentModelAdapter;
@@ -23,6 +24,7 @@ export interface QueryPipelineRuntimeFixtures {
     walkingAssetsAvailable: boolean;
     now?: () => number;
     eventLogger?: EventLogger;
+    deviceIdProvider?: DeviceIdProvider;
 }
 
 export function createQueryPipelineRuntime(adapters: QueryPipelineRuntimeAdapters, fixtures: QueryPipelineRuntimeFixtures) {
@@ -43,6 +45,7 @@ export function createQueryPipelineRuntime(adapters: QueryPipelineRuntimeAdapter
             disruptionService: new CacheAwareDisruptionService(new StaticDisruptionSource(fixtures.disruptions), fixtures.now),
             eventLogger,
             graph: fixtures.graph,
+            deviceIdProvider: fixtures.deviceIdProvider,
         }),
     };
 }

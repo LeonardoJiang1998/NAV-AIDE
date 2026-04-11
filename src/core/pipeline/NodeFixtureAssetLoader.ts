@@ -1,8 +1,8 @@
 import busRoutes from '../../../assets/busRoutes.json' with { type: 'json' };
 import tubeGraph from '../../../assets/tubeGraph.json' with { type: 'json' };
 
-import type { WeightedGraph } from '../routing/Dijkstra.js';
-import type { OfflineRuntimeAssetLoader, BusRoutesAsset, DisruptionCacheInput, OfflineRuntimeAssetContracts, TubeGraphAsset, WalkingRoutingInput } from '../runtime/OfflineRuntimeContracts.js';
+import type { OfflineRuntimeAssetLoader, BusRoutesAsset, DisruptionCacheInput, OfflineRuntimeAssetContracts, TubeGraphAsset, WalkingRoutingInput } from '../runtime/OfflineRuntimeContracts';
+import { buildWeightedGraphFromTubeAsset, deriveKnownStations } from './TubeGraphTransforms';
 
 const FIXTURE_DISRUPTION_CACHE: DisruptionCacheInput = {
     generatedAt: '2026-04-11T09:10:00.000Z',
@@ -48,13 +48,4 @@ export function createNodeFixtureAssetLoader(contracts: OfflineRuntimeAssetContr
     };
 }
 
-export function buildWeightedGraphFromTubeAsset(asset: TubeGraphAsset): WeightedGraph {
-    return {
-        nodes: asset.nodes.map((node) => ({ id: node.id, name: node.name })),
-        edges: asset.edges.map((edge) => ({ from: edge.from, to: edge.to, cost: edge.travelMinutes, lineId: edge.lineId })),
-    };
-}
-
-export function deriveKnownStations(asset: TubeGraphAsset): string[] {
-    return asset.nodes.map((node) => node.name);
-}
+export { buildWeightedGraphFromTubeAsset, deriveKnownStations };

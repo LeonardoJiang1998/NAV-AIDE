@@ -1,4 +1,4 @@
-import { FuzzyMatcher } from '../poi/FuzzyMatcher.js';
+import { FuzzyMatcher } from '../poi/FuzzyMatcher';
 
 export type ResolvedEntityType = 'station' | 'poi';
 export type MatchMethod = 'exact' | 'alias' | 'fuzzy';

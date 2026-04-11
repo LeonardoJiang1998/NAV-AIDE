@@ -1,4 +1,4 @@
-import type { OfflineAssetManifestEntry } from './assetManifest.js';
+import type { OfflineAssetManifestEntry } from './assetManifest';
 
 export interface ManifestCheckResult {
     key: string;

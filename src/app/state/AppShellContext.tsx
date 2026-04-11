@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { Platform } from 'react-native';
 
 import { AssetManager, type AssetStatus } from '../assets/AssetManager';
-import { LocalModelManager, type LocalModelStatus } from '../model/LocalModelManager';
+import type { LocalModelStatus } from '../model/LocalModelManager';
 import { createMobilePipeline } from '../pipeline/createMobilePipeline';
 import { sampleDestinations } from '../pipeline/mobileFixtures';
 import { VoiceServices } from '../voice/VoiceServices';
@@ -78,17 +78,21 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
 
     const refreshSystemState = async () => {
         const assetManager = new AssetManager();
-        const modelManager = new LocalModelManager();
         const voiceServices = new VoiceServices();
 
-        const [assets, model, voice] = await Promise.all([
-            assetManager.getStatus().catch(() => ({ ready: false, checks: [] })),
-            modelManager.load('models/gemma4-e2b.gguf'),
+        const [assets, runtimeProbe, voice] = await Promise.all([
+            assetManager.getStatus(),
+            mobilePipeline.probeRuntime().catch(() => null),
             voiceServices.getCapabilities(),
         ]);
 
         setAssetStatus(assets);
-        setModelStatus(model);
+        setModelStatus(runtimeProbe?.model ?? {
+            loaded: false,
+            modelPath: assets.resolvedPaths.model.resolvedPath,
+            backend: 'llama.rn',
+            failureReason: 'Runtime probe unavailable',
+        });
         setVoiceCapabilities(voice);
     };
 

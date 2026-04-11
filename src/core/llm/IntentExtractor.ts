@@ -1,4 +1,4 @@
-import type { StructuredIntentModelAdapter } from '../runtime/ModelAdapterContracts.js';
+import type { StructuredIntentModelAdapter } from '../runtime/ModelAdapterContracts';
 
 export type ExtractedIntentType = 'route' | 'nearest_station' | 'poi_lookup' | 'lost_help' | 'fare' | 'unknown';
 export type ExtractedLanguage = 'English' | 'Mandarin' | 'Spanish' | 'French' | 'Arabic' | 'Other';

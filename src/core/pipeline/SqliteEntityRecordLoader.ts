@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 
-import { EntityResolver, type EntityRecord, type ResolvedEntityType } from './EntityResolver.js';
+import { EntityResolver, type EntityRecord, type ResolvedEntityType } from './EntityResolver';
 
 const FIELD_SEPARATOR = '\t';
 const ALIAS_SEPARATOR = '|||';

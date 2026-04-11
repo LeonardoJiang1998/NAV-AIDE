@@ -1,4 +1,4 @@
-import type { NaturalLanguageRenderAdapter, NaturalLanguageRenderResponse } from '../runtime/ModelAdapterContracts.js';
+import type { NaturalLanguageRenderAdapter, NaturalLanguageRenderResponse } from '../runtime/ModelAdapterContracts';
 
 export interface RenderRequest {
     intent: string;

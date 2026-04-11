@@ -1,4 +1,4 @@
-import type { OfflineRuntimeAssetContracts } from '../runtime/OfflineRuntimeContracts.js';
+import type { OfflineRuntimeAssetContracts } from '../runtime/OfflineRuntimeContracts';
 
 export type OfflineAssetKind = 'json' | 'sqlite' | 'mbtiles' | 'directory';
 

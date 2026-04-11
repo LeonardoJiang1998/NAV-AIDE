@@ -1,4 +1,4 @@
-import { FuzzyMatcher } from './FuzzyMatcher.js';
+import { FuzzyMatcher } from './FuzzyMatcher';
 
 export interface POIRecord {
     id: string;

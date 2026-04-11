@@ -1,4 +1,4 @@
-import type { DisruptionEvent } from '../services/DisruptionService.js';
+import type { DisruptionEvent } from '../services/DisruptionService';
 
 export interface TubeGraphNodeAsset {
     id: string;

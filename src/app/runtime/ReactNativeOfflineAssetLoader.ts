@@ -1,0 +1,130 @@
+import RNFS from 'react-native-fs';
+
+import { OFFLINE_RUNTIME_ASSET_CONTRACTS } from '../../core/pipeline/OfflineAssetRegistry';
+import type {
+    BusRoutesAsset,
+    DisruptionCacheInput,
+    SqliteAssetContract,
+    TubeGraphAsset,
+    WalkingRoutingInput,
+} from '../../core/runtime/OfflineRuntimeContracts';
+import busRoutes from '../../../assets/busRoutes.json';
+import tubeGraph from '../../../assets/tubeGraph.json';
+import { disruptions as fixtureDisruptions } from '../pipeline/mobileFixtures';
+import { buildResolvedAssetCandidates, type AssetPathRoots } from './AssetPathResolver';
+
+export interface AssetPathResolution {
+    key: string;
+    relativePath: string;
+    resolvedPath: string;
+    exists: boolean;
+    source: 'document' | 'library' | 'cache' | 'bundle' | 'unresolved';
+}
+
+export interface RuntimeAssetPathReport {
+    model: AssetPathResolution;
+    poisDb: AssetPathResolution;
+    locationAliasesDb: AssetPathResolution;
+    walkingRouting: AssetPathResolution;
+    disruptionCache: AssetPathResolution;
+}
+
+export class ReactNativeOfflineAssetLoader {
+    public constructor(
+        private readonly roots: AssetPathRoots = {
+            documentDirectoryPath: RNFS.DocumentDirectoryPath,
+            libraryDirectoryPath: RNFS.LibraryDirectoryPath,
+            cachesDirectoryPath: RNFS.CachesDirectoryPath,
+            mainBundlePath: RNFS.MainBundlePath,
+        }
+    ) { }
+
+    public loadTubeGraph(): TubeGraphAsset {
+        return tubeGraph as TubeGraphAsset;
+    }
+
+    public loadBusRoutes(): BusRoutesAsset {
+        return busRoutes as BusRoutesAsset;
+    }
+
+    public async resolveModelPath(): Promise<AssetPathResolution> {
+        return this.resolveRelativePath('model', 'models/gemma4-e2b.gguf');
+    }
+
+    public async resolveSqlitePath(contract: SqliteAssetContract): Promise<AssetPathResolution> {
+        return this.resolveRelativePath(contract.key, contract.relativePath);
+    }
+
+    public async loadDisruptionCache(): Promise<DisruptionCacheInput> {
+        const report = await this.resolveRelativePath(
+            OFFLINE_RUNTIME_ASSET_CONTRACTS.disruptionCache.key,
+            OFFLINE_RUNTIME_ASSET_CONTRACTS.disruptionCache.relativePath
+        );
+
+        if (report.exists) {
+            const raw = await RNFS.readFile(report.resolvedPath, 'utf8');
+            return JSON.parse(raw) as DisruptionCacheInput;
+        }
+
+        return {
+            generatedAt: '2026-04-11T09:10:00.000Z',
+            source: 'fixture-static',
+            events: fixtureDisruptions,
+        };
+    }
+
+    public async getWalkingRoutingInput(): Promise<WalkingRoutingInput> {
+        const report = await this.resolveRelativePath(
+            OFFLINE_RUNTIME_ASSET_CONTRACTS.walkingRouting.key,
+            OFFLINE_RUNTIME_ASSET_CONTRACTS.walkingRouting.relativePath
+        );
+
+        return {
+            provider: 'valhalla',
+            profile: 'pedestrian',
+            relativePath: report.resolvedPath,
+            assetsAvailable: report.exists,
+        };
+    }
+
+    public async getAssetPathReport(): Promise<RuntimeAssetPathReport> {
+        return {
+            model: await this.resolveModelPath(),
+            poisDb: await this.resolveSqlitePath(OFFLINE_RUNTIME_ASSET_CONTRACTS.poisDatabase),
+            locationAliasesDb: await this.resolveSqlitePath(OFFLINE_RUNTIME_ASSET_CONTRACTS.locationAliasesDatabase),
+            walkingRouting: await this.resolveRelativePath(
+                OFFLINE_RUNTIME_ASSET_CONTRACTS.walkingRouting.key,
+                OFFLINE_RUNTIME_ASSET_CONTRACTS.walkingRouting.relativePath
+            ),
+            disruptionCache: await this.resolveRelativePath(
+                OFFLINE_RUNTIME_ASSET_CONTRACTS.disruptionCache.key,
+                OFFLINE_RUNTIME_ASSET_CONTRACTS.disruptionCache.relativePath
+            ),
+        };
+    }
+
+    private async resolveRelativePath(key: string, relativePath: string): Promise<AssetPathResolution> {
+        const candidates = buildResolvedAssetCandidates(relativePath, this.roots);
+
+        for (const candidate of candidates) {
+            if (await RNFS.exists(candidate.path)) {
+                return {
+                    key,
+                    relativePath,
+                    resolvedPath: candidate.path,
+                    exists: true,
+                    source: candidate.source,
+                };
+            }
+        }
+
+        const fallback = candidates[0];
+        return {
+            key,
+            relativePath,
+            resolvedPath: fallback?.path ?? relativePath,
+            exists: false,
+            source: 'unresolved',
+        };
+    }
+}

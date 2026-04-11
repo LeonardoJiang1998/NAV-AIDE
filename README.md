@@ -137,6 +137,56 @@ Known RN compatibility risks before shell work:
 - JSON import-attribute usage should stay isolated in Node-only loaders
 - offline asset path resolution must move behind RN file-system adapters in Phase 3
 
+## Phase 3A Setup
+
+Install JavaScript dependencies:
+
+```bash
+npm install
+```
+
+Install iOS pods:
+
+```bash
+cd ios && pod install && cd ..
+```
+
+Phase 3A verification:
+
+```bash
+npm run build
+npm test
+npm run bundle:ios
+npm run bundle:android
+```
+
+Added Phase 3A runtime wiring:
+
+- no new JavaScript dependencies were added in this pass; the runtime adapters are built on the existing `llama.rn`, `react-native-fs`, and `react-native-sqlite-storage` dependencies already present in the repo
+- `createMobilePipeline()` now composes RN asset resolution, RN-safe device ID generation, `llama.rn` model adapters, and RN SQLite validation behind the shared runtime contracts
+- the shell remains screen-light on purpose; this phase only prepares the runtime and bundle path for later feature screens
+
+Platform-specific steps:
+
+- iOS: run `cd ios && pod install && cd ..` after dependency changes and before building in Xcode or on simulator/device
+- Android: the current Gradle setup uses React Native autolinking; no extra manual linking was needed for this pass
+- if `react-native-sqlite-storage` prints the existing configuration warning during bundling, keep the package installed and verify native config with `npx react-native config`; bundling still succeeds in the current repo state
+
+Runtime asset placement:
+
+- bundled JSON fixtures continue to provide `tubeGraph.json` and `busRoutes.json`
+- runtime-resolved assets are searched under the app document, library, cache, and main bundle roots in that order
+- the model file is expected at `models/gemma4-e2b.gguf`
+- SQLite assets are expected at `data/pois.db` and `data/location_aliases.db`
+- optional disruption cache is expected at `cache/disruptions.json`
+- walking-routing assets are expected under `valhalla_tiles/`
+
+Simulator versus physical device:
+
+- simulator validation is best for Metro bundling, shell boot, and adapter wiring checks
+- physical device validation is still needed for real `llama.rn`, on-device file placement, microphone permissions, and native SQLite behavior against shipped assets
+- until production assets are copied into device-visible paths, the pipeline falls back to rule-based adapters so the shell can still invoke the runtime without full UI work
+
 ## Product Notes
 
 NAV AiDE is multilingual, offline-first, and built for London travel, with planned emphasis on offline maps, door-to-door directions, and the LOST? helper. The MVP remains local-data-first and does not use cloud AI APIs.

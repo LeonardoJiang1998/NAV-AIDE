@@ -1,12 +1,13 @@
-import { EventLogger } from '../../analytics/EventLogger.js';
-import { IntentExtractor, type IntentExtraction } from '../llm/IntentExtractor.js';
-import { ResponseRenderer, type RenderedResponse } from '../llm/ResponseRenderer.js';
-import { FuzzyMatcher } from '../poi/FuzzyMatcher.js';
-import { type POIResult, POIService } from '../poi/POIService.js';
-import { Dijkstra, type ShortestPathResult, type WeightedGraph } from '../routing/Dijkstra.js';
-import { ValhallaBridge, type WalkingRouteResult } from '../routing/ValhallaBridge.js';
-import { CacheAwareDisruptionService, type DisruptionEvent } from '../services/DisruptionService.js';
-import { EntityResolver, type EntityRecord, type ResolutionResult } from './EntityResolver.js';
+import { EventLogger } from '../../analytics/EventLogger';
+import type { DeviceIdProvider } from '../runtime/DeviceIdContracts';
+import { IntentExtractor, type IntentExtraction } from '../llm/IntentExtractor';
+import { ResponseRenderer, type RenderedResponse } from '../llm/ResponseRenderer';
+import { FuzzyMatcher } from '../poi/FuzzyMatcher';
+import { type POIResult, POIService } from '../poi/POIService';
+import { Dijkstra, type ShortestPathResult, type WeightedGraph } from '../routing/Dijkstra';
+import { ValhallaBridge, type WalkingRouteResult } from '../routing/ValhallaBridge';
+import { CacheAwareDisruptionService, type DisruptionEvent } from '../services/DisruptionService';
+import { EntityResolver, type EntityRecord, type ResolutionResult } from './EntityResolver';
 
 export interface QueryPipelineDependencies {
     intentExtractor: IntentExtractor;
@@ -19,6 +20,7 @@ export interface QueryPipelineDependencies {
     eventLogger: EventLogger;
     graph: WeightedGraph;
     fuzzyMatcher?: FuzzyMatcher;
+    deviceIdProvider?: DeviceIdProvider;
 }
 
 export interface QueryPipelineResult {
@@ -41,10 +43,11 @@ export class QueryPipeline {
         const fastPathHints = this.buildFastPathHints(rawQuery);
         const extraction = await this.dependencies.intentExtractor.extract(rawQuery, knownStations, { fastPathHints });
         const result = await this.resolveIntent(extraction, fastPathHints);
+        const deviceId = await this.resolveDeviceId();
 
         this.dependencies.eventLogger.log({
             eventName: 'query_pipeline_completed',
-            deviceId: 'phase-2-node',
+            deviceId,
             occurredAt: new Date().toISOString(),
             payload: {
                 intent: extraction.intent,
@@ -54,6 +57,14 @@ export class QueryPipeline {
         });
 
         return result;
+    }
+
+    private async resolveDeviceId(): Promise<string> {
+        if (!this.dependencies.deviceIdProvider) {
+            return 'phase-2-node';
+        }
+
+        return this.dependencies.deviceIdProvider.getDeviceId();
     }
 
     private async resolveIntent(extraction: IntentExtraction, fastPathHints: string[]): Promise<QueryPipelineResult> {
