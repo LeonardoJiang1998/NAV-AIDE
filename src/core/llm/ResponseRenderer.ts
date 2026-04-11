@@ -1,22 +1,18 @@
+import type { NaturalLanguageRenderAdapter, NaturalLanguageRenderResponse } from '../runtime/ModelAdapterContracts.js';
+
 export interface RenderRequest {
     intent: string;
     summary: string;
     allowedPlaceNames: string[];
 }
 
-export interface RenderModelResponse {
-    text: string;
-    referencedPlaceNames: string[];
-}
-
-export interface NaturalLanguageRenderClient {
-    render(request: { prompt: string }): Promise<RenderModelResponse>;
-}
+export type RenderModelResponse = NaturalLanguageRenderResponse;
+export type NaturalLanguageRenderClient = NaturalLanguageRenderAdapter;
 
 export interface RenderedResponse extends RenderModelResponse { }
 
 export class ResponseRenderer {
-    public constructor(private readonly client: NaturalLanguageRenderClient) { }
+    public constructor(private readonly client: NaturalLanguageRenderAdapter) { }
 
     public async render(request: RenderRequest): Promise<RenderedResponse> {
         const prompt = [
@@ -26,7 +22,7 @@ export class ResponseRenderer {
             `Allowed place names: ${request.allowedPlaceNames.join(', ')}`,
         ].join('\n');
 
-        const response = await this.client.render({ prompt });
+        const response = await this.client.renderNaturalLanguage({ prompt });
         assertNoHallucinatedPlaceNames(response.referencedPlaceNames, request.allowedPlaceNames);
         return response;
     }

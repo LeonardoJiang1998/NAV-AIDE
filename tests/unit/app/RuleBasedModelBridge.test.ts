@@ -5,7 +5,7 @@ import { RuleBasedStructuredModelClient } from '../../../src/app/pipeline/RuleBa
 
 test('RuleBasedStructuredModelClient extracts a route query into structured intent', async () => {
     const client = new RuleBasedStructuredModelClient(['Waterloo', 'Baker Street', 'Green Park']);
-    const result = await client.generate<any>({ prompt: 'User query: How do I get from Waterloo to Baker Street?' });
+    const result = await client.generateStructured<any>({ prompt: 'User query: How do I get from Waterloo to Baker Street?', schema: {} });
 
     assert.equal(result.intent, 'route');
     assert.equal(result.origin, 'Waterloo');
@@ -14,7 +14,7 @@ test('RuleBasedStructuredModelClient extracts a route query into structured inte
 
 test('RuleBasedStructuredModelClient keeps Park ambiguous', async () => {
     const client = new RuleBasedStructuredModelClient(['Green Park', 'Baker Street']);
-    const result = await client.generate<any>({ prompt: 'User query: Take me to Park' });
+    const result = await client.generateStructured<any>({ prompt: 'User query: Take me to Park', schema: {} });
 
     assert.equal(result.intent, 'route');
     assert.equal(result.destination, 'Park');

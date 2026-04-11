@@ -1,3 +1,5 @@
+import type { StructuredIntentModelAdapter } from '../runtime/ModelAdapterContracts.js';
+
 export type ExtractedIntentType = 'route' | 'nearest_station' | 'poi_lookup' | 'lost_help' | 'fare' | 'unknown';
 export type ExtractedLanguage = 'English' | 'Mandarin' | 'Spanish' | 'French' | 'Arabic' | 'Other';
 
@@ -11,9 +13,7 @@ export interface IntentExtraction {
     rawQuery: string;
 }
 
-export interface StructuredJsonModelClient {
-    generate<T>(request: { prompt: string; schema: object }): Promise<T>;
-}
+export type StructuredJsonModelClient = StructuredIntentModelAdapter;
 
 export interface IntentExtractionOptions {
     fastPathHints?: string[];
@@ -35,11 +35,11 @@ export const INTENT_EXTRACTION_SCHEMA = {
 } as const;
 
 export class IntentExtractor {
-    public constructor(private readonly client: StructuredJsonModelClient) { }
+    public constructor(private readonly client: StructuredIntentModelAdapter) { }
 
     public async extract(rawQuery: string, knownStations: string[], options: IntentExtractionOptions = {}): Promise<IntentExtraction> {
         const prompt = this.buildPrompt(rawQuery, knownStations, options.fastPathHints ?? []);
-        const result = await this.client.generate<IntentExtraction>({
+        const result = await this.client.generateStructured<IntentExtraction>({
             prompt,
             schema: INTENT_EXTRACTION_SCHEMA,
         });

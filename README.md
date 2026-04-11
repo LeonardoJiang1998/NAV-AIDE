@@ -105,6 +105,38 @@ npm run build
 npm test
 ```
 
+## Pre-Shell Handoff
+
+Safe to carry into Phase 3 unchanged:
+
+- `src/core/routing/Dijkstra.ts`
+- `src/core/poi/FuzzyMatcher.ts`
+- `src/core/poi/POIService.ts`
+- `src/core/pipeline/EntityResolver.ts`
+- `src/core/pipeline/QueryPipeline.ts`
+- `src/core/pipeline/createQueryPipelineRuntime.ts`
+- `src/core/llm/IntentExtractor.ts`
+- `src/core/llm/ResponseRenderer.ts`
+- `src/core/services/DisruptionService.ts`
+- `src/core/runtime/ModelAdapterContracts.ts`
+- `src/core/runtime/OfflineRuntimeContracts.ts`
+
+RN-specific adapters still needed in the next phase:
+
+- `src/core/pipeline/NodeFixtureAssetLoader.ts`: Node fixture loader only, not a mobile asset loader
+- `src/core/pipeline/SqliteEntityRecordLoader.ts`: depends on `node:child_process` and the `sqlite3` CLI
+- `src/analytics/DeviceID.ts`: depends on `node:crypto`
+- model adapters that call `llama.rn`
+- SQLite adapters backed by `react-native-sqlite-storage`
+- disruption-cache and walking-routing asset readers backed by mobile file storage
+
+Known RN compatibility risks before shell work:
+
+- direct `node:` imports are not portable to React Native
+- CLI-driven SQLite access must be replaced with RN SQLite bindings
+- JSON import-attribute usage should stay isolated in Node-only loaders
+- offline asset path resolution must move behind RN file-system adapters in Phase 3
+
 ## Product Notes
 
 NAV AiDE is multilingual, offline-first, and built for London travel, with planned emphasis on offline maps, door-to-door directions, and the LOST? helper. The MVP remains local-data-first and does not use cloud AI APIs.

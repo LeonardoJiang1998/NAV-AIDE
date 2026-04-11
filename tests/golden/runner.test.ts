@@ -4,15 +4,10 @@ import assert from 'node:assert/strict';
 import cases from './fixtures/query-pipeline-cases.json' with { type: 'json' };
 import resultSchema from './schemas/queryPipelineResult.schema.json' with { type: 'json' };
 import { DeviceID } from '../../src/analytics/DeviceID.js';
-import { EventLogger } from '../../src/analytics/EventLogger.js';
-import { IntentExtractor, type IntentExtraction, type StructuredJsonModelClient } from '../../src/core/llm/IntentExtractor.js';
-import { ResponseRenderer, type NaturalLanguageRenderClient } from '../../src/core/llm/ResponseRenderer.js';
-import { POIService, type POIRecord } from '../../src/core/poi/POIService.js';
-import { QueryPipeline } from '../../src/core/pipeline/QueryPipeline.js';
+import type { POIRecord } from '../../src/core/poi/POIService.js';
 import { EntityResolver, type EntityRecord } from '../../src/core/pipeline/EntityResolver.js';
-import { Dijkstra } from '../../src/core/routing/Dijkstra.js';
-import { AssetAwareWalkingRouter, ValhallaBridge } from '../../src/core/routing/ValhallaBridge.js';
-import { CacheAwareDisruptionService, StaticDisruptionSource } from '../../src/core/services/DisruptionService.js';
+import { createQueryPipelineRuntime } from '../../src/core/pipeline/createQueryPipelineRuntime.js';
+import type { NaturalLanguageRenderAdapter, StructuredIntentModelAdapter } from '../../src/core/runtime/ModelAdapterContracts.js';
 import { assertGoldenOutputHasNoHallucinations } from './helpers/hallucinationAssertion.js';
 import type { GoldenPipelineCase } from './types.js';
 
@@ -45,8 +40,8 @@ const graph = {
     ],
 };
 
-class StubIntentClient implements StructuredJsonModelClient {
-    public async generate<T>(request: { prompt: string }): Promise<T> {
+class StubIntentClient implements StructuredIntentModelAdapter {
+    public async generateStructured<T>(request: { prompt: string }): Promise<T> {
         const rawQueryLine = request.prompt.split('\n').find((line) => line.startsWith('User query: '));
         const rawQuery = rawQueryLine?.replace('User query: ', '') ?? '';
         const fixture = (cases as GoldenPipelineCase[]).find((goldenCase) => goldenCase.rawQuery === rawQuery);
@@ -62,8 +57,8 @@ class StubIntentClient implements StructuredJsonModelClient {
     }
 }
 
-class StubRenderClient implements NaturalLanguageRenderClient {
-    public async render(request: { prompt: string }) {
+class StubRenderClient implements NaturalLanguageRenderAdapter {
+    public async renderNaturalLanguage(request: { prompt: string }) {
         const summaryLine = request.prompt.split('\n').find((line) => line.startsWith('Summary: '));
         const allowedLine = request.prompt.split('\n').find((line) => line.startsWith('Allowed place names: '));
         const text = summaryLine?.replace('Summary: ', '') ?? '';
@@ -80,33 +75,32 @@ class StubRenderClient implements NaturalLanguageRenderClient {
 }
 
 function createPipeline() {
-    const eventLogger = new EventLogger();
-
-    return {
-        eventLogger,
-        pipeline: new QueryPipeline({
-        intentExtractor: new IntentExtractor(new StubIntentClient()),
-        entityResolver: new EntityResolver(entities),
-        poiService: new POIService(pois),
-        router: new Dijkstra(),
-        walkingRouter: new ValhallaBridge(new AssetAwareWalkingRouter(true)),
-        responseRenderer: new ResponseRenderer(new StubRenderClient()),
-        disruptionService: new CacheAwareDisruptionService(new StaticDisruptionSource([
-            { id: 'line-jubilee-baker-street', summary: 'Minor Jubilee delay at Baker Street', affectedPlaceNames: ['Baker Street'], updatedAt: '2026-04-11T09:00:00.000Z' },
-            { id: 'poi-british-museum', summary: 'Museum entrance queue notice', affectedPlaceNames: ['British Museum'], updatedAt: '2026-04-11T09:05:00.000Z' },
-            { id: 'station-green-park', summary: 'Lift maintenance at Green Park', affectedPlaceNames: ['Green Park'], updatedAt: '2026-04-11T09:10:00.000Z' },
-        ]), () => 0),
-        eventLogger,
-        graph,
-        }),
-    };
+    return createQueryPipelineRuntime(
+        {
+            intentModel: new StubIntentClient(),
+            responseModel: new StubRenderClient(),
+        },
+        {
+            knownStations: entities.filter((entity) => entity.type === 'station').map((entity) => entity.canonicalName),
+            entities,
+            pois,
+            graph,
+            disruptions: [
+                { id: 'line-jubilee-baker-street', summary: 'Minor Jubilee delay at Baker Street', affectedPlaceNames: ['Baker Street'], updatedAt: '2026-04-11T09:00:00.000Z' },
+                { id: 'poi-british-museum', summary: 'Museum entrance queue notice', affectedPlaceNames: ['British Museum'], updatedAt: '2026-04-11T09:05:00.000Z' },
+                { id: 'station-green-park', summary: 'Lift maintenance at Green Park', affectedPlaceNames: ['Green Park'], updatedAt: '2026-04-11T09:10:00.000Z' },
+            ],
+            walkingAssetsAvailable: true,
+            now: () => 0,
+        }
+    );
 }
 
 for (const goldenCase of cases as GoldenPipelineCase[]) {
     test(`golden pipeline case: ${goldenCase.id}`, async () => {
         assertGoldenCaseShape(goldenCase);
-        const { pipeline, eventLogger } = createPipeline();
-        const result = await pipeline.execute(goldenCase.rawQuery, entities.filter((entity) => entity.type === 'station').map((entity) => entity.canonicalName));
+        const { queryPipeline, eventLogger } = createPipeline();
+        const result = await queryPipeline.execute(goldenCase.rawQuery, entities.filter((entity) => entity.type === 'station').map((entity) => entity.canonicalName));
 
         assertQueryPipelineResultShape(result);
         assert.equal(result.status, goldenCase.expectedStatus);
@@ -124,11 +118,11 @@ for (const goldenCase of cases as GoldenPipelineCase[]) {
         }
 
         if (goldenCase.expectedPoiNames) {
-            assert.deepEqual(result.poiResults?.map((entry) => entry.poi.canonicalName) ?? [], goldenCase.expectedPoiNames);
+            assert.deepEqual(result.poiResults?.map((entry: { poi: { canonicalName: string } }) => entry.poi.canonicalName) ?? [], goldenCase.expectedPoiNames);
         }
 
         if (goldenCase.expectedDisruptionIds) {
-            assert.deepEqual(result.disruptions.map((entry) => entry.id), goldenCase.expectedDisruptionIds);
+            assert.deepEqual(result.disruptions.map((entry: { id: string }) => entry.id), goldenCase.expectedDisruptionIds);
         }
 
         if (goldenCase.expectedOriginStatus) {

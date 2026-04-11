@@ -1,7 +1,7 @@
 import Fuse from 'fuse.js';
 
-import type { IntentExtraction, StructuredJsonModelClient } from '../../core/llm/IntentExtractor';
-import type { NaturalLanguageRenderClient, RenderModelResponse } from '../../core/llm/ResponseRenderer';
+import type { IntentExtraction } from '../../core/llm/IntentExtractor';
+import type { NaturalLanguageRenderAdapter, NaturalLanguageRenderResponse, StructuredIntentModelAdapter } from '../../core/runtime/ModelAdapterContracts';
 
 function detectLanguage(query: string): IntentExtraction['detectedLanguage'] {
     if (/[\u4e00-\u9fff]/u.test(query)) {
@@ -37,10 +37,10 @@ function findStationNames(query: string, knownStations: string[]): string[] {
     return fuse.search(query).slice(0, 2).map((result) => result.item);
 }
 
-export class RuleBasedStructuredModelClient implements StructuredJsonModelClient {
+export class RuleBasedStructuredModelClient implements StructuredIntentModelAdapter {
     public constructor(private readonly knownStations: string[]) { }
 
-    public async generate<T>(request: { prompt: string }): Promise<T> {
+    public async generateStructured<T>(request: { prompt: string; schema: object }): Promise<T> {
         const rawQuery = extractUserQuery(request.prompt);
         const normalized = rawQuery.toLowerCase();
         const stationMatches = findStationNames(rawQuery, this.knownStations);
@@ -91,8 +91,8 @@ export class RuleBasedStructuredModelClient implements StructuredJsonModelClient
     }
 }
 
-export class RuleBasedRenderClient implements NaturalLanguageRenderClient {
-    public async render(request: { prompt: string }): Promise<RenderModelResponse> {
+export class RuleBasedRenderClient implements NaturalLanguageRenderAdapter {
+    public async renderNaturalLanguage(request: { prompt: string }): Promise<NaturalLanguageRenderResponse> {
         const summaryMatch = request.prompt.match(/Summary:\s*(.+)$/m);
         const allowedMatch = request.prompt.match(/Allowed place names:\s*(.+)$/m);
         const text = summaryMatch ? summaryMatch[1].trim() : 'No summary available.';
