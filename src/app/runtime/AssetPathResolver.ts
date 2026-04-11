@@ -2,11 +2,12 @@ export interface AssetPathRoots {
     documentDirectoryPath: string;
     libraryDirectoryPath?: string;
     cachesDirectoryPath?: string;
+    externalDirectoryPath?: string;
     mainBundlePath?: string;
 }
 
 export interface ResolvedAssetCandidate {
-    source: 'document' | 'library' | 'cache' | 'bundle';
+    source: 'document' | 'library' | 'cache' | 'external' | 'bundle';
     path: string;
 }
 
@@ -30,6 +31,10 @@ export function buildResolvedAssetCandidates(relativePath: string, roots: AssetP
 
     if (roots.cachesDirectoryPath) {
         candidates.push({ source: 'cache', path: `${trimTrailingSlash(roots.cachesDirectoryPath)}/${joined}` });
+    }
+
+    if (roots.externalDirectoryPath) {
+        candidates.push({ source: 'external', path: `${trimTrailingSlash(roots.externalDirectoryPath)}/${joined}` });
     }
 
     if (roots.mainBundlePath) {

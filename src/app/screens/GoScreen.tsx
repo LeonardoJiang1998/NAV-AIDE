@@ -34,7 +34,7 @@ function mapPipelineError(error: unknown): FlowAlert {
 }
 
 export function GoScreen(): React.JSX.Element {
-    const { assetStatus, assetDiagnostics, modelStatus, permissions, preferences, runtimeState, voiceCapabilities, stagedDestination, clearStagedDestination, enqueueFeedback, mobilePipeline } = useAppShell();
+    const { assetStatus, assetDiagnostics, demoReadiness, modelStatus, permissions, preferences, runtimeState, voiceCapabilities, stagedDestination, clearStagedDestination, enqueueFeedback, mobilePipeline } = useAppShell();
     const [query, setQuery] = useState('How do I get from Waterloo to Baker Street?');
     const [transportMode, setTransportMode] = useState('Tube');
     const [resultText, setResultText] = useState<string | null>(null);
@@ -61,6 +61,14 @@ export function GoScreen(): React.JSX.Element {
 
     const runQuery = async () => {
         setFlowAlert(null);
+
+        if (demoReadiness.blockers.length > 0 && runtimeState.source === 'fixture-fallback') {
+            setFlowAlert({
+                label: 'fallback demo mode',
+                detail: `Routing can still run, but this demo is not fully device-backed. ${demoReadiness.blockers[0]}`,
+                tone: 'warn',
+            });
+        }
 
         try {
             const pipelineResult = await mobilePipeline.queryPipeline.execute(query, mobilePipeline.knownStations);
@@ -148,6 +156,7 @@ export function GoScreen(): React.JSX.Element {
                 <Text style={shellStyles.copy}>{assetDiagnostics.cacheState === 'offline-with-cache' ? 'Offline with cache is available for degraded guidance.' : 'Offline without cache means route search must wait for successful downloads.'}</Text>
                 <Text style={shellStyles.copy}>{modelStatus?.loaded ? 'Native model path is loaded.' : 'Model loading remains pending, so this shell may fall back to fixture-safe adapters.'}</Text>
                 <Text style={shellStyles.copy}>Pipeline source: {runtimeState.source}. Entities: {runtimeState.entitySource}. POIs: {runtimeState.poiSource}.</Text>
+                <Text style={shellStyles.copy}>Demo readiness: {demoReadiness.readyForInternalDemo ? 'device-backed' : 'fallback-visible'}.</Text>
             </SectionCard>
             <SectionCard>
                 <Text style={styles.sectionTitle}>Search</Text>
@@ -168,6 +177,7 @@ export function GoScreen(): React.JSX.Element {
                     </Pressable>
                 </View>
                 <Text style={shellStyles.copy}>Voice search hook is represented by OS STT capability in Settings; text search routes through the mobile pipeline adapter here.</Text>
+                {!voiceCapabilities?.stt ? <Text style={shellStyles.copy}>STT did not validate on this device check. Text entry remains the safe demo path.</Text> : null}
             </SectionCard>
             {flowAlert ? (
                 <SectionCard>

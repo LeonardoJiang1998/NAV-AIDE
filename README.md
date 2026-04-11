@@ -187,6 +187,43 @@ Simulator versus physical device:
 - physical device validation is still needed for real `llama.rn`, on-device file placement, microphone permissions, and native SQLite behavior against shipped assets
 - until production assets are copied into device-visible paths, the pipeline falls back to rule-based adapters so the shell can still invoke the runtime without full UI work
 
+## Phase 3C Physical Device Demo Setup
+
+Exact asset placement paths are relative to the app sandbox. The shell searches these roots in order:
+
+- app Documents
+- app Library
+- app Caches
+- Android external app files directory when available
+- app main bundle
+
+Required relative paths:
+
+- `models/gemma4-e2b.gguf`
+- `data/pois.db`
+- `data/location_aliases.db`
+- `maps/london.mbtiles`
+- `routing/valhalla_tiles/`
+- optional: `cache/disruptions.json`
+
+Physical device setup steps:
+
+1. Install the app on the device once so the sandbox exists.
+2. iOS device:
+	Place demo assets into the app Documents container for bundle ID `org.reactjs.native.example.NavAideShell` using Finder file sharing or Xcode device container access. The target relative paths are `Documents/models/gemma4-e2b.gguf`, `Documents/data/pois.db`, `Documents/data/location_aliases.db`, `Documents/maps/london.mbtiles`, and `Documents/routing/valhalla_tiles/`.
+3. Android device:
+	Place demo assets into the app files directory for application ID `com.navaideshell`. The most practical demo path is `/storage/emulated/0/Android/data/com.navaideshell/files/` with the same relative layout: `models/gemma4-e2b.gguf`, `data/pois.db`, `data/location_aliases.db`, `maps/london.mbtiles`, and `routing/valhalla_tiles/`.
+4. Launch the app and open Settings.
+5. Tap `Refresh status` to rerun model, SQLite, map, walking-asset, and disruption-cache checks.
+6. On Android, tap `Request Android demo permissions` to request microphone and location access. On iOS, validate the microphone and location prompts on first use because the shell can only scaffold those checks without an additional permission library.
+7. Confirm the Settings screen reports `real-asset-mode` before presenting a full internal device-backed demo.
+
+Device-backed versus fallback expectations:
+
+- `real-asset-mode` means the local GGUF model loaded, SQLite runtime mode is active, MBTiles are present, walking tiles are present, and STT/TTS runtime checks passed.
+- `fixture-fallback-mode` remains explicit whenever any of those checks fail or assets are missing.
+- fallback mode is acceptable for shell walkthroughs, but it should not be presented as a full offline-device demo.
+
 ## Product Notes
 
 NAV AiDE is multilingual, offline-first, and built for London travel, with planned emphasis on offline maps, door-to-door directions, and the LOST? helper. The MVP remains local-data-first and does not use cloud AI APIs.

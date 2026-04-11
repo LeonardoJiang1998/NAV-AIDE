@@ -13,6 +13,7 @@ test('buildResolvedAssetCandidates yields ordered runtime search paths', () => {
         documentDirectoryPath: '/documents',
         libraryDirectoryPath: '/library',
         cachesDirectoryPath: '/cache',
+        externalDirectoryPath: '/external',
         mainBundlePath: '/bundle',
     });
 
@@ -20,6 +21,7 @@ test('buildResolvedAssetCandidates yields ordered runtime search paths', () => {
         { source: 'document', path: '/documents/data/location_aliases.db' },
         { source: 'library', path: '/library/data/location_aliases.db' },
         { source: 'cache', path: '/cache/data/location_aliases.db' },
+        { source: 'external', path: '/external/data/location_aliases.db' },
         { source: 'bundle', path: '/bundle/data/location_aliases.db' },
     ]);
 });

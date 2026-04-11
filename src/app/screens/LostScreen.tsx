@@ -29,7 +29,7 @@ function mapPipelineError(error: unknown): FlowAlert {
 }
 
 export function LostScreen(): React.JSX.Element {
-    const { mobilePipeline, permissions, runtimeState, voiceCapabilities } = useAppShell();
+    const { demoReadiness, mobilePipeline, permissions, runtimeState, voiceCapabilities } = useAppShell();
     const [signpostText, setSignpostText] = useState('Park');
     const [askPeopleText, setAskPeopleText] = useState('I am lost near Bank');
     const [signpostResult, setSignpostResult] = useState<ReturnType<typeof mobilePipeline.entityResolver.resolve> | null>(null);
@@ -109,6 +109,8 @@ export function LostScreen(): React.JSX.Element {
             <SectionCard>
                 <Text style={styles.sectionTitle}>Ask People flow</Text>
                 <Text style={shellStyles.copy}>OS STT available: {voiceCapabilities?.stt ? 'yes' : 'no'}. Low-confidence STT stays surfaced as an explicit shell error state.</Text>
+                {!voiceCapabilities?.stt ? <Text style={shellStyles.copy}>Safe demo fallback: use typed transcript examples below instead of live speech.</Text> : null}
+                {demoReadiness.mode === 'fixture-fallback-mode' ? <Text style={shellStyles.copy}>Fixture fallback remains explicit in this flow so internal demos do not imply production asset coverage.</Text> : null}
                 <TextInput value={askPeopleText} onChangeText={setAskPeopleText} style={styles.input} placeholder="Simulated speech transcript" placeholderTextColor="#7c8a85" />
                 <View style={styles.exampleRow}>
                     <Pressable onPress={() => setAskPeopleText('I am lost near Green Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Resolved example</Text></Pressable>
@@ -121,8 +123,8 @@ export function LostScreen(): React.JSX.Element {
                         <StatusChip label={askPeopleResult.status} tone={askPeopleResult.status === 'complete' ? 'good' : askPeopleResult.status === 'needs_disambiguation' ? 'warn' : 'bad'} />
                         <Text style={shellStyles.copy}>{askPeopleResult.rendered?.text ?? 'No spoken match found.'}</Text>
                         {(askPeopleResult.origin?.status === 'disambiguation' ? askPeopleResult.origin.candidates : askPeopleResult.destination?.candidates ?? []).map((candidate) => (
-                                <Text key={candidate.entity.id} style={shellStyles.copy}>Candidate: {candidate.entity.canonicalName}</Text>
-                            ))}
+                            <Text key={candidate.entity.id} style={shellStyles.copy}>Candidate: {candidate.entity.canonicalName}</Text>
+                        ))}
                     </>
                 ) : null}
             </SectionCard>

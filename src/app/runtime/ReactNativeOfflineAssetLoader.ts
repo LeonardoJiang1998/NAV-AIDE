@@ -12,13 +12,15 @@ import busRoutes from '../../../assets/busRoutes.json';
 import tubeGraph from '../../../assets/tubeGraph.json';
 import { disruptions as fixtureDisruptions } from '../pipeline/mobileFixtures';
 import { buildResolvedAssetCandidates, type AssetPathRoots } from './AssetPathResolver';
+import { DEVICE_DEMO_ASSETS, getDeviceDemoAssetDefinition, type DeviceDemoAssetKey } from './DeviceDemoAssets';
 
 export interface AssetPathResolution {
     key: string;
     relativePath: string;
     resolvedPath: string;
     exists: boolean;
-    source: 'document' | 'library' | 'cache' | 'bundle' | 'unresolved';
+    source: 'document' | 'library' | 'cache' | 'external' | 'bundle' | 'unresolved';
+    candidates: Array<{ source: 'document' | 'library' | 'cache' | 'external' | 'bundle'; path: string }>;
 }
 
 export interface RuntimeAssetPathReport {
@@ -36,6 +38,7 @@ export class ReactNativeOfflineAssetLoader {
             documentDirectoryPath: RNFS.DocumentDirectoryPath,
             libraryDirectoryPath: RNFS.LibraryDirectoryPath,
             cachesDirectoryPath: RNFS.CachesDirectoryPath,
+            externalDirectoryPath: RNFS.ExternalDirectoryPath,
             mainBundlePath: RNFS.MainBundlePath,
         }
     ) { }
@@ -105,6 +108,20 @@ export class ReactNativeOfflineAssetLoader {
         };
     }
 
+    public getPlacementGuide() {
+        return DEVICE_DEMO_ASSETS.map((asset) => ({
+            ...asset,
+            candidates: buildResolvedAssetCandidates(asset.relativePath, this.roots),
+        }));
+    }
+
+    public getResolvedPlacementGuide(report: RuntimeAssetPathReport) {
+        return DEVICE_DEMO_ASSETS.map((asset) => ({
+            ...asset,
+            resolution: this.findResolution(report, asset.key),
+        }));
+    }
+
     private async resolveRelativePath(key: string, relativePath: string): Promise<AssetPathResolution> {
         const candidates = buildResolvedAssetCandidates(relativePath, this.roots);
 
@@ -116,6 +133,7 @@ export class ReactNativeOfflineAssetLoader {
                     resolvedPath: candidate.path,
                     exists: true,
                     source: candidate.source,
+                    candidates,
                 };
             }
         }
@@ -127,6 +145,38 @@ export class ReactNativeOfflineAssetLoader {
             resolvedPath: fallback?.path ?? relativePath,
             exists: false,
             source: 'unresolved',
+            candidates,
+        };
+    }
+
+    private findResolution(report: RuntimeAssetPathReport, key: DeviceDemoAssetKey): AssetPathResolution {
+        switch (key) {
+            case 'model':
+                return report.model;
+            case 'map-mbtiles':
+                return report.mapMbtiles;
+            case 'pois-db':
+                return report.poisDb;
+            case 'location-aliases-db':
+                return report.locationAliasesDb;
+            case 'valhalla-tiles':
+                return report.walkingRouting;
+            case 'disruption-cache':
+                return report.disruptionCache;
+            default:
+                return this.resolveFromDefinition(getDeviceDemoAssetDefinition(key));
+        }
+    }
+
+    private resolveFromDefinition(definition: ReturnType<typeof getDeviceDemoAssetDefinition>): AssetPathResolution {
+        const candidates = buildResolvedAssetCandidates(definition.relativePath, this.roots);
+        return {
+            key: definition.key,
+            relativePath: definition.relativePath,
+            resolvedPath: candidates[0]?.path ?? definition.relativePath,
+            exists: false,
+            source: 'unresolved',
+            candidates,
         };
     }
 }

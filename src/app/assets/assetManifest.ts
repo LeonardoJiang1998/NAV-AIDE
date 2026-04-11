@@ -1,3 +1,5 @@
+import { DEVICE_DEMO_ASSETS } from '../runtime/DeviceDemoAssets';
+
 export interface OfflineAssetManifestEntry {
     key: string;
     path: string;
@@ -6,10 +8,10 @@ export interface OfflineAssetManifestEntry {
 }
 
 export const assetManifest: OfflineAssetManifestEntry[] = [
-    { key: 'model', path: 'models/gemma4-e2b.gguf', checksum: 'phase-3-model-checksum' },
-    { key: 'map-mbtiles', path: 'maps/london.mbtiles', checksum: 'phase-3-map-checksum' },
-    { key: 'valhalla-tiles', path: 'routing/valhalla_tiles', checksum: 'phase-3-routing-checksum' },
-    { key: 'pois-db', path: 'data/pois.db', checksum: 'phase-3-poi-checksum' },
-    { key: 'location-aliases-db', path: 'data/location_aliases.db', checksum: 'phase-3-alias-checksum' },
-    { key: 'disruption-cache', path: 'cache/disruptions.json', checksum: 'phase-3-disruption-cache-checksum', optional: true },
+    { key: 'model', path: DEVICE_DEMO_ASSETS.find((entry) => entry.key === 'model')!.relativePath, checksum: 'phase-3-model-checksum' },
+    { key: 'map-mbtiles', path: DEVICE_DEMO_ASSETS.find((entry) => entry.key === 'map-mbtiles')!.relativePath, checksum: 'phase-3-map-checksum' },
+    { key: 'valhalla-tiles', path: DEVICE_DEMO_ASSETS.find((entry) => entry.key === 'valhalla-tiles')!.relativePath, checksum: 'phase-3-routing-checksum' },
+    { key: 'pois-db', path: DEVICE_DEMO_ASSETS.find((entry) => entry.key === 'pois-db')!.relativePath, checksum: 'phase-3-poi-checksum' },
+    { key: 'location-aliases-db', path: DEVICE_DEMO_ASSETS.find((entry) => entry.key === 'location-aliases-db')!.relativePath, checksum: 'phase-3-alias-checksum' },
+    { key: 'disruption-cache', path: DEVICE_DEMO_ASSETS.find((entry) => entry.key === 'disruption-cache')!.relativePath, checksum: 'phase-3-disruption-cache-checksum', optional: true },
 ];

@@ -9,7 +9,9 @@ import { colors } from '../theme';
 import { shellStyles } from './shared';
 
 export function SettingsScreen(): React.JSX.Element {
-    const { assetStatus, assetDiagnostics, modelStatus, preferences, permissions, runtimeState, feedbackQueue, deviceInfo, refreshSystemState, updatePermission, updatePreference } = useAppShell();
+    const { assetStatus, assetDiagnostics, demoReadiness, modelStatus, preferences, permissions, runtimeState, voiceCapabilities, feedbackQueue, deviceInfo, mobilePipeline, refreshSystemState, requestDemoPermissions, updatePermission, updatePreference } = useAppShell();
+
+    const placementGuide = assetStatus ? mobilePipeline.runtimeAdapters.assetLoader.getResolvedPlacementGuide(assetStatus.resolvedPaths) : [];
 
     return (
         <ScrollView contentContainerStyle={shellStyles.screen}>
@@ -43,6 +45,17 @@ export function SettingsScreen(): React.JSX.Element {
                 <Text style={shellStyles.copy}>{runtimeState.reasons.join(' ')}</Text>
             </SectionCard>
             <SectionCard>
+                <View style={styles.rowBetween}>
+                    <Text style={styles.sectionTitle}>Device demo readiness</Text>
+                    <StatusChip label={demoReadiness.mode} tone={demoReadiness.readyForInternalDemo ? 'good' : 'warn'} />
+                </View>
+                <Text style={shellStyles.copy}>Internal demo ready: {demoReadiness.readyForInternalDemo ? 'yes' : 'no'}</Text>
+                {demoReadiness.deviceBacked.map((entry) => <Text key={entry} style={shellStyles.copy}>Device-backed: {entry}</Text>)}
+                {demoReadiness.fallback.map((entry) => <Text key={entry} style={shellStyles.copy}>Fallback: {entry}</Text>)}
+                {demoReadiness.blockers.map((entry) => <Text key={entry} style={shellStyles.copy}>Blocker: {entry}</Text>)}
+                {demoReadiness.warnings.map((entry) => <Text key={entry} style={shellStyles.copy}>Note: {entry}</Text>)}
+            </SectionCard>
+            <SectionCard>
                 <Text style={styles.sectionTitle}>Preferences</Text>
                 <View style={styles.toggleRow}><Text style={shellStyles.copy}>Voice guidance</Text><Switch value={preferences.voiceEnabled} onValueChange={(value) => updatePreference('voiceEnabled', value)} /></View>
                 <View style={styles.toggleRow}><Text style={shellStyles.copy}>Prefer walking first</Text><Switch value={preferences.preferWalkingFirst} onValueChange={(value) => updatePreference('preferWalkingFirst', value)} /></View>
@@ -51,6 +64,24 @@ export function SettingsScreen(): React.JSX.Element {
                 <Text style={styles.sectionTitle}>Permissions</Text>
                 <View style={styles.toggleRow}><Text style={shellStyles.copy}>GPS permission</Text><Switch value={permissions.gps} onValueChange={(value) => updatePermission('gps', value)} /></View>
                 <View style={styles.toggleRow}><Text style={shellStyles.copy}>Microphone permission</Text><Switch value={permissions.microphone} onValueChange={(value) => updatePermission('microphone', value)} /></View>
+                <Text style={shellStyles.copy}>STT runtime: {voiceCapabilities?.stt ? 'available' : 'unavailable'}</Text>
+                <Text style={shellStyles.copy}>TTS runtime: {voiceCapabilities?.tts ? 'available' : 'unavailable'}</Text>
+                <Text style={shellStyles.copy}>Microphone check: {voiceCapabilities?.microphonePermission ?? 'unknown'}</Text>
+                <Text style={shellStyles.copy}>Location check: {voiceCapabilities?.locationPermission ?? 'unknown'}</Text>
+                <Pressable onPress={() => void requestDemoPermissions()} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Request Android demo permissions</Text></Pressable>
+            </SectionCard>
+            <SectionCard>
+                <Text style={styles.sectionTitle}>Exact asset placement</Text>
+                {placementGuide.map((entry) => (
+                    <View key={entry.key} style={styles.assetRow}>
+                        <Text style={shellStyles.copy}>{entry.label}</Text>
+                        <Text style={shellStyles.copy}>Relative path: {entry.relativePath}</Text>
+                        <Text style={shellStyles.copy}>Resolved: {entry.resolution.exists ? `${entry.resolution.source} -> ${entry.resolution.resolvedPath}` : 'missing'}</Text>
+                        {entry.resolution.candidates.map((candidate) => (
+                            <Text key={candidate.path} style={shellStyles.copy}>Candidate path: {candidate.path}</Text>
+                        ))}
+                    </View>
+                ))}
             </SectionCard>
             <SectionCard>
                 <Text style={styles.sectionTitle}>Feedback queue</Text>
@@ -101,5 +132,21 @@ const styles = StyleSheet.create({
     primaryButtonText: {
         color: '#fffaf1',
         fontWeight: '700',
+    },
+    secondaryButton: {
+        alignSelf: 'flex-start',
+        backgroundColor: '#ece4d7',
+        borderRadius: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    secondaryButtonText: {
+        color: colors.ink,
+        fontWeight: '700',
+    },
+    assetRow: {
+        borderTopColor: colors.line,
+        borderTopWidth: 1,
+        paddingTop: 10,
     },
 });

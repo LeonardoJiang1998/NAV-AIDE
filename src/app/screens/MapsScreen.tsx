@@ -11,7 +11,7 @@ import { colors } from '../theme';
 import { shellStyles } from './shared';
 
 export function MapsScreen(): React.JSX.Element {
-    const { assetStatus, deviceInfo, runtimeState, stagedDestination, stageDestination } = useAppShell();
+    const { assetStatus, demoReadiness, deviceInfo, runtimeState, stagedDestination, stageDestination } = useAppShell();
     const [showTube, setShowTube] = useState(true);
     const [showBus, setShowBus] = useState(true);
     const [showWalking, setShowWalking] = useState(false);
@@ -41,6 +41,8 @@ export function MapsScreen(): React.JSX.Element {
                 <View style={styles.toggleRow}><Text style={shellStyles.copy}>Bus</Text><Switch value={showBus} onValueChange={setShowBus} /></View>
                 <View style={styles.toggleRow}><Text style={shellStyles.copy}>Walking</Text><Switch value={showWalking} onValueChange={setShowWalking} /></View>
                 <Text style={shellStyles.copy}>Runtime source: {runtimeState.source}. Map asset: {assetStatus?.resolvedPaths.mapMbtiles.exists ? 'present' : 'missing'}.</Text>
+                {!assetStatus?.resolvedPaths.mapMbtiles.exists ? <Text style={shellStyles.copy}>Safe demo fallback: map staging and coordinate controls still work, but this is not a true MBTiles-backed map demo yet.</Text> : null}
+                <Text style={shellStyles.copy}>Demo mode: {demoReadiness.mode}</Text>
             </SectionCard>
             <SectionCard>
                 <View style={styles.rowBetween}>

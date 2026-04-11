@@ -14,7 +14,7 @@ interface AlertDescriptor {
 }
 
 export function SystemAlertsCard(): React.JSX.Element {
-    const { assetStatus, assetDiagnostics, modelStatus, permissions, runtimeState } = useAppShell();
+    const { assetStatus, assetDiagnostics, demoReadiness, modelStatus, permissions, runtimeState, voiceCapabilities } = useAppShell();
 
     const alerts: AlertDescriptor[] = [
         {
@@ -70,6 +70,42 @@ export function SystemAlertsCard(): React.JSX.Element {
             label: 'fixture fallback',
             tone: 'warn',
             detail: runtimeState.reasons.join(' '),
+        });
+    }
+
+    if (!demoReadiness.readyForInternalDemo) {
+        alerts.push({
+            key: 'demo-readiness',
+            label: 'demo not fully device-backed',
+            tone: 'warn',
+            detail: demoReadiness.blockers.join(' '),
+        });
+    }
+
+    if (!voiceCapabilities?.stt) {
+        alerts.push({
+            key: 'stt-runtime',
+            label: 'stt unavailable',
+            tone: 'bad',
+            detail: 'OS speech recognition did not validate on this device runtime check.',
+        });
+    }
+
+    if (!voiceCapabilities?.tts) {
+        alerts.push({
+            key: 'tts-runtime',
+            label: 'tts unavailable',
+            tone: 'bad',
+            detail: 'OS text-to-speech did not validate on this device runtime check.',
+        });
+    }
+
+    if (voiceCapabilities?.microphonePermission === 'denied') {
+        alerts.push({
+            key: 'microphone',
+            label: 'microphone permission denied',
+            tone: 'bad',
+            detail: 'Microphone access is denied, so live STT cannot be demonstrated safely.',
         });
     }
 
