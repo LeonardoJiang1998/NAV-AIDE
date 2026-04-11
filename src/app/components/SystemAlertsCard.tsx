@@ -14,7 +14,7 @@ interface AlertDescriptor {
 }
 
 export function SystemAlertsCard(): React.JSX.Element {
-    const { assetStatus, assetDiagnostics, modelStatus, permissions } = useAppShell();
+    const { assetStatus, assetDiagnostics, modelStatus, permissions, runtimeState } = useAppShell();
 
     const alerts: AlertDescriptor[] = [
         {
@@ -60,7 +60,16 @@ export function SystemAlertsCard(): React.JSX.Element {
             key: 'model-loading',
             label: 'model loading',
             tone: 'warn',
-            detail: 'The native Gemma runtime is still pending. Structured normalization is scaffolded, but native model loading is not active yet.',
+            detail: modelStatus?.failureReason ?? 'The native Gemma runtime is still pending. Structured normalization is scaffolded, but native model loading is not active yet.',
+        });
+    }
+
+    if (runtimeState.source === 'fixture-fallback') {
+        alerts.push({
+            key: 'fixture-runtime',
+            label: 'fixture fallback',
+            tone: 'warn',
+            detail: runtimeState.reasons.join(' '),
         });
     }
 

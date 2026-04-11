@@ -47,3 +47,9 @@ export const disruptions: DisruptionEvent[] = [
 
 export const busRouteNames = busRoutes.routes.map((route) => route.displayName);
 export const sampleDestinations = ['Baker Street', 'British Museum', 'Green Park'];
+
+export const sampleDestinationPins: Record<string, { longitude: number; latitude: number }> = {
+    'Baker Street': { longitude: -0.1571, latitude: 51.5226 },
+    'British Museum': { longitude: -0.1269, latitude: 51.5194 },
+    'Green Park': { longitude: -0.1425, latitude: 51.5067 },
+};

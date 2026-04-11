@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 import { AssetManager, type AssetStatus } from '../assets/AssetManager';
 import type { LocalModelStatus } from '../model/LocalModelManager';
-import { createMobilePipeline } from '../pipeline/createMobilePipeline';
+import { createMobilePipeline, type MobilePipeline, type MobilePipelineRuntimeState } from '../pipeline/createMobilePipeline';
 import { sampleDestinations } from '../pipeline/mobileFixtures';
 import { VoiceServices } from '../voice/VoiceServices';
 
@@ -35,13 +35,14 @@ interface AppShellContextValue {
     assetStatus: AssetStatus | null;
     assetDiagnostics: AssetDiagnostics;
     modelStatus: LocalModelStatus | null;
+    runtimeState: MobilePipelineRuntimeState;
     voiceCapabilities: { stt: boolean; tts: boolean } | null;
     preferences: PreferencesState;
     permissions: PermissionsState;
     feedbackQueue: FeedbackEntry[];
     deviceInfo: { platform: string; sampleDestinations: string[] };
     stagedDestination: string | null;
-    mobilePipeline: ReturnType<typeof createMobilePipeline>;
+    mobilePipeline: MobilePipeline;
     refreshSystemState(): Promise<void>;
     updatePreference<K extends keyof PreferencesState>(key: K, value: PreferencesState[K]): void;
     updatePermission<K extends keyof PermissionsState>(key: K, value: PermissionsState[K]): void;
@@ -53,15 +54,15 @@ interface AppShellContextValue {
 const AppShellContext = createContext<AppShellContextValue | null>(null);
 
 export function AppShellProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
+    const mobilePipeline = useMemo(() => createMobilePipeline(), []);
     const [assetStatus, setAssetStatus] = useState<AssetStatus | null>(null);
     const [modelStatus, setModelStatus] = useState<LocalModelStatus | null>(null);
+    const [runtimeState, setRuntimeState] = useState<MobilePipelineRuntimeState>(mobilePipeline.runtimeState);
     const [voiceCapabilities, setVoiceCapabilities] = useState<{ stt: boolean; tts: boolean } | null>(null);
     const [preferences, setPreferences] = useState<PreferencesState>({ voiceEnabled: true, preferWalkingFirst: false });
     const [permissions, setPermissions] = useState<PermissionsState>({ gps: false, microphone: true });
     const [feedbackQueue, setFeedbackQueue] = useState<FeedbackEntry[]>([]);
     const [stagedDestination, setStagedDestination] = useState<string | null>(null);
-
-    const mobilePipeline = useMemo(() => createMobilePipeline(), []);
     const assetDiagnostics = useMemo<AssetDiagnostics>(() => {
         const checks = assetStatus?.checks ?? [];
         const availableCount = checks.filter((check) => check.exists).length;
@@ -82,12 +83,13 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
 
         const [assets, runtimeProbe, voice] = await Promise.all([
             assetManager.getStatus(),
-            mobilePipeline.probeRuntime().catch(() => null),
+            mobilePipeline.initializeRuntime().catch(() => mobilePipeline.runtimeState),
             voiceServices.getCapabilities(),
         ]);
 
         setAssetStatus(assets);
-        setModelStatus(runtimeProbe?.model ?? {
+        setRuntimeState(runtimeProbe);
+        setModelStatus(runtimeProbe.probe?.model ?? {
             loaded: false,
             modelPath: assets.resolvedPaths.model.resolvedPath,
             backend: 'llama.rn',
@@ -98,12 +100,13 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
 
     useEffect(() => {
         void refreshSystemState();
-    }, []);
+    }, [mobilePipeline]);
 
     const value: AppShellContextValue = {
         assetStatus,
         assetDiagnostics,
         modelStatus,
+        runtimeState,
         voiceCapabilities,
         preferences,
         permissions,

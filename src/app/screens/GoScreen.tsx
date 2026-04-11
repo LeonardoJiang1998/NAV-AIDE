@@ -34,7 +34,7 @@ function mapPipelineError(error: unknown): FlowAlert {
 }
 
 export function GoScreen(): React.JSX.Element {
-    const { assetStatus, assetDiagnostics, modelStatus, permissions, preferences, voiceCapabilities, stagedDestination, clearStagedDestination, enqueueFeedback, mobilePipeline } = useAppShell();
+    const { assetStatus, assetDiagnostics, modelStatus, permissions, preferences, runtimeState, voiceCapabilities, stagedDestination, clearStagedDestination, enqueueFeedback, mobilePipeline } = useAppShell();
     const [query, setQuery] = useState('How do I get from Waterloo to Baker Street?');
     const [transportMode, setTransportMode] = useState('Tube');
     const [resultText, setResultText] = useState<string | null>(null);
@@ -60,11 +60,6 @@ export function GoScreen(): React.JSX.Element {
     }, [stagedDestination]);
 
     const runQuery = async () => {
-        if (!assetStatus?.ready) {
-            setFlowAlert({ label: 'assets not downloaded', detail: 'Route search is blocked until the offline asset set is present.', tone: 'warn' });
-            return;
-        }
-
         setFlowAlert(null);
 
         try {
@@ -80,6 +75,10 @@ export function GoScreen(): React.JSX.Element {
             if (pipelineResult.status === 'unresolved') {
                 setFlowAlert({ label: 'no route found', detail: 'The shell could not produce a valid offline route for this request.', tone: 'bad' });
                 return;
+            }
+
+            if (runtimeState.source === 'fixture-fallback') {
+                setFlowAlert({ label: 'fixture fallback active', detail: runtimeState.reasons.join(' '), tone: 'warn' });
             }
 
             clearStagedDestination();
@@ -147,7 +146,8 @@ export function GoScreen(): React.JSX.Element {
                     <Text style={shellStyles.copy}>{permissions.gps ? 'Blue dot is ready for surface navigation.' : 'GPS permission is off, so the shell is using an underground-safe last known location state.'}</Text>
                 </View>
                 <Text style={shellStyles.copy}>{assetDiagnostics.cacheState === 'offline-with-cache' ? 'Offline with cache is available for degraded guidance.' : 'Offline without cache means route search must wait for successful downloads.'}</Text>
-                <Text style={shellStyles.copy}>{modelStatus?.loaded ? 'Native model path is loaded.' : 'Model loading remains pending, so this shell is still using the Phase 4 local bridge.'}</Text>
+                <Text style={shellStyles.copy}>{modelStatus?.loaded ? 'Native model path is loaded.' : 'Model loading remains pending, so this shell may fall back to fixture-safe adapters.'}</Text>
+                <Text style={shellStyles.copy}>Pipeline source: {runtimeState.source}. Entities: {runtimeState.entitySource}. POIs: {runtimeState.poiSource}.</Text>
             </SectionCard>
             <SectionCard>
                 <Text style={styles.sectionTitle}>Search</Text>
@@ -173,6 +173,14 @@ export function GoScreen(): React.JSX.Element {
                 <SectionCard>
                     <StatusChip label={flowAlert.label} tone={flowAlert.tone} />
                     <Text style={shellStyles.copy}>{flowAlert.detail}</Text>
+                </SectionCard>
+            ) : null}
+            {result?.status === 'needs_disambiguation' ? (
+                <SectionCard>
+                    <Text style={styles.sectionTitle}>Disambiguation</Text>
+                    {(result.origin?.candidates ?? result.destination?.candidates ?? []).map((candidate) => (
+                        <Text key={candidate.entity.id} style={shellStyles.copy}>Candidate: {candidate.entity.canonicalName}</Text>
+                    ))}
                 </SectionCard>
             ) : null}
             {result ? <RouteCard result={result} /> : null}

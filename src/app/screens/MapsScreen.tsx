@@ -5,28 +5,42 @@ import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
 import { SystemAlertsCard } from '../components/SystemAlertsCard';
 import { OfflineMapSurface } from '../map/OfflineMapSurface';
+import { sampleDestinationPins } from '../pipeline/mobileFixtures';
 import { useAppShell } from '../state/AppShellContext';
 import { colors } from '../theme';
 import { shellStyles } from './shared';
 
 export function MapsScreen(): React.JSX.Element {
-    const { deviceInfo, stagedDestination, stageDestination } = useAppShell();
+    const { assetStatus, deviceInfo, runtimeState, stagedDestination, stageDestination } = useAppShell();
     const [showTube, setShowTube] = useState(true);
     const [showBus, setShowBus] = useState(true);
     const [showWalking, setShowWalking] = useState(false);
     const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
+
+    const selectedCoordinate = selectedDestination
+        ? ([sampleDestinationPins[selectedDestination].longitude, sampleDestinationPins[selectedDestination].latitude] as [number, number])
+        : null;
 
     return (
         <ScrollView contentContainerStyle={shellStyles.screen}>
             <Text style={shellStyles.title}>Maps</Text>
             <Text style={shellStyles.copy}>Toggle map layers, inspect the offline surface, and stage a navigate-here destination for the GO flow.</Text>
             <SystemAlertsCard />
-            <OfflineMapSurface mbtilesPath="maps/london.mbtiles" />
+            <OfflineMapSurface
+                mbtilesPath={assetStatus?.resolvedPaths.mapMbtiles.resolvedPath ?? 'maps/london.mbtiles'}
+                mapAvailable={assetStatus?.resolvedPaths.mapMbtiles.exists ?? false}
+                showTube={showTube}
+                showBus={showBus}
+                showWalking={showWalking}
+                selectedLabel={selectedDestination}
+                selectedCoordinate={selectedCoordinate}
+            />
             <SectionCard>
                 <Text style={styles.sectionTitle}>Layer toggles</Text>
                 <View style={styles.toggleRow}><Text style={shellStyles.copy}>Tube</Text><Switch value={showTube} onValueChange={setShowTube} /></View>
                 <View style={styles.toggleRow}><Text style={shellStyles.copy}>Bus</Text><Switch value={showBus} onValueChange={setShowBus} /></View>
                 <View style={styles.toggleRow}><Text style={shellStyles.copy}>Walking</Text><Switch value={showWalking} onValueChange={setShowWalking} /></View>
+                <Text style={shellStyles.copy}>Runtime source: {runtimeState.source}. Map asset: {assetStatus?.resolvedPaths.mapMbtiles.exists ? 'present' : 'missing'}.</Text>
             </SectionCard>
             <SectionCard>
                 <View style={styles.rowBetween}>

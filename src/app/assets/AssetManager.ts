@@ -43,6 +43,8 @@ export class AssetManager {
                 return resolvedPaths.poisDb;
             case 'location-aliases-db':
                 return resolvedPaths.locationAliasesDb;
+            case 'map-mbtiles':
+                return resolvedPaths.mapMbtiles;
             case 'valhalla-tiles':
                 return resolvedPaths.walkingRouting;
             case 'disruption-cache':

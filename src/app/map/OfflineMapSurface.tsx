@@ -1,23 +1,85 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 
 import { colors } from '../theme';
 
 export interface OfflineMapSurfaceProps {
     mbtilesPath: string;
+    mapAvailable: boolean;
+    showTube: boolean;
+    showBus: boolean;
+    showWalking: boolean;
+    selectedLabel?: string | null;
+    selectedCoordinate?: [number, number] | null;
 }
 
-export function OfflineMapSurface({ mbtilesPath }: OfflineMapSurfaceProps): React.JSX.Element {
+const DEFAULT_CENTER: [number, number] = [-0.1276, 51.5072];
+
+export function OfflineMapSurface({
+    mbtilesPath,
+    mapAvailable,
+    showTube,
+    showBus,
+    showWalking,
+    selectedLabel = null,
+    selectedCoordinate = null,
+}: OfflineMapSurfaceProps): React.JSX.Element {
+    const [centerCoordinate, setCenterCoordinate] = useState<[number, number]>(DEFAULT_CENTER);
+    const [zoomLevel, setZoomLevel] = useState(11);
+    const [lastPressedCoordinate, setLastPressedCoordinate] = useState<[number, number] | null>(null);
+
+    useEffect(() => {
+        if (selectedCoordinate) {
+            setCenterCoordinate(selectedCoordinate);
+            setZoomLevel(13);
+        }
+    }, [selectedCoordinate]);
+
+    const visibleLayers = useMemo(() => [
+        showTube ? 'Tube' : null,
+        showBus ? 'Bus' : null,
+        showWalking ? 'Walking' : null,
+    ].filter(Boolean).join(', ') || 'None', [showBus, showTube, showWalking]);
+
     return (
         <View style={styles.frame}>
-            <Text style={styles.heading}>Offline Map Layer Hook</Text>
+            <Text style={styles.heading}>Offline Map Surface</Text>
             <Text style={styles.copy}>MBTiles path: {mbtilesPath}</Text>
+            <Text style={styles.copy}>{mapAvailable ? 'Offline map asset detected.' : 'Offline map asset not found on device. Rendering shell map with static style path only.'}</Text>
+            <Text style={styles.copy}>Visible layers: {visibleLayers}</Text>
             <View style={styles.mapShell}>
-                <MapLibreGL.MapView style={StyleSheet.absoluteFill} styleURL="asset://styles/offline-style.json">
-                    <MapLibreGL.Camera zoomLevel={11} centerCoordinate={[-0.1276, 51.5072]} />
+                <MapLibreGL.MapView
+                    style={StyleSheet.absoluteFill}
+                    styleURL="asset://styles/offline-style.json"
+                    onPress={(event: { geometry?: { coordinates?: [number, number] } }) => {
+                        if (event.geometry?.coordinates) {
+                            setLastPressedCoordinate(event.geometry.coordinates);
+                        }
+                    }}
+                >
+                    <MapLibreGL.Camera zoomLevel={zoomLevel} centerCoordinate={centerCoordinate} />
                 </MapLibreGL.MapView>
+                <View style={styles.overlay} pointerEvents="box-none">
+                    <View style={styles.controlRow}>
+                        <Pressable onPress={() => setZoomLevel((current) => Math.min(current + 1, 18))} style={styles.controlButton}>
+                            <Text style={styles.controlText}>Zoom +</Text>
+                        </Pressable>
+                        <Pressable onPress={() => setZoomLevel((current) => Math.max(current - 1, 8))} style={styles.controlButton}>
+                            <Text style={styles.controlText}>Zoom -</Text>
+                        </Pressable>
+                        <Pressable onPress={() => {
+                            setCenterCoordinate(DEFAULT_CENTER);
+                            setZoomLevel(11);
+                        }} style={styles.controlButton}>
+                            <Text style={styles.controlText}>Recenter</Text>
+                        </Pressable>
+                    </View>
+                </View>
             </View>
+            <Text style={styles.copy}>Center: {centerCoordinate[1].toFixed(4)}, {centerCoordinate[0].toFixed(4)} at zoom {zoomLevel}</Text>
+            {selectedLabel ? <Text style={styles.copy}>Focused destination: {selectedLabel}</Text> : null}
+            {lastPressedCoordinate ? <Text style={styles.copy}>Last map press: {lastPressedCoordinate[1].toFixed(4)}, {lastPressedCoordinate[0].toFixed(4)}</Text> : null}
         </View>
     );
 }
@@ -42,5 +104,27 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         height: 320,
         overflow: 'hidden',
+    },
+    overlay: {
+        alignItems: 'flex-start',
+        padding: 12,
+        position: 'absolute',
+        width: '100%',
+    },
+    controlRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    controlButton: {
+        backgroundColor: 'rgba(17, 33, 29, 0.82)',
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    controlText: {
+        color: '#fffaf1',
+        fontSize: 12,
+        fontWeight: '700',
     },
 });

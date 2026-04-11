@@ -9,7 +9,7 @@ import { colors } from '../theme';
 import { shellStyles } from './shared';
 
 export function SettingsScreen(): React.JSX.Element {
-    const { assetStatus, assetDiagnostics, modelStatus, preferences, permissions, feedbackQueue, deviceInfo, refreshSystemState, updatePermission, updatePreference } = useAppShell();
+    const { assetStatus, assetDiagnostics, modelStatus, preferences, permissions, runtimeState, feedbackQueue, deviceInfo, refreshSystemState, updatePermission, updatePreference } = useAppShell();
 
     return (
         <ScrollView contentContainerStyle={shellStyles.screen}>
@@ -26,7 +26,21 @@ export function SettingsScreen(): React.JSX.Element {
                 <Text style={shellStyles.copy}>Offline cache state: {assetDiagnostics.cacheState}</Text>
                 <Text style={shellStyles.copy}>Missing asset count: {assetDiagnostics.missingCount}</Text>
                 <Text style={shellStyles.copy}>Checksum mismatches: {assetDiagnostics.checksumMismatchCount}</Text>
+                <Text style={shellStyles.copy}>Map MBTiles path: {assetStatus?.resolvedPaths.mapMbtiles.resolvedPath ?? 'maps/london.mbtiles'}</Text>
                 <Pressable onPress={() => void refreshSystemState()} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Refresh status</Text></Pressable>
+            </SectionCard>
+            <SectionCard>
+                <View style={styles.rowBetween}>
+                    <Text style={styles.sectionTitle}>Runtime state</Text>
+                    <StatusChip label={runtimeState.source} tone={runtimeState.source === 'sqlite-runtime' ? 'good' : 'warn'} />
+                </View>
+                <Text style={shellStyles.copy}>Entity source: {runtimeState.entitySource}</Text>
+                <Text style={shellStyles.copy}>POI source: {runtimeState.poiSource}</Text>
+                <Text style={shellStyles.copy}>Disruption source: {runtimeState.disruptionSource}</Text>
+                <Text style={shellStyles.copy}>Walking assets available: {runtimeState.walkingAssetsAvailable ? 'yes' : 'no'}</Text>
+                <Text style={shellStyles.copy}>Entity count: {runtimeState.entityCount}</Text>
+                <Text style={shellStyles.copy}>POI count: {runtimeState.poiCount}</Text>
+                <Text style={shellStyles.copy}>{runtimeState.reasons.join(' ')}</Text>
             </SectionCard>
             <SectionCard>
                 <Text style={styles.sectionTitle}>Preferences</Text>
@@ -48,6 +62,8 @@ export function SettingsScreen(): React.JSX.Element {
                 <Text style={styles.sectionTitle}>Device info</Text>
                 <Text style={shellStyles.copy}>Platform: {deviceInfo.platform}</Text>
                 <Text style={shellStyles.copy}>Local model loaded: {modelStatus?.loaded ? 'yes' : 'pending native runtime'}</Text>
+                <Text style={shellStyles.copy}>Model backend: {modelStatus?.backend ?? 'llama.rn'}</Text>
+                <Text style={shellStyles.copy}>Model issue: {modelStatus?.failureReason ?? 'none'}</Text>
             </SectionCard>
             <SectionCard>
                 <Text style={styles.sectionTitle}>Attributions</Text>

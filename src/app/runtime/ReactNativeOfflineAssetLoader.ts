@@ -23,6 +23,7 @@ export interface AssetPathResolution {
 
 export interface RuntimeAssetPathReport {
     model: AssetPathResolution;
+    mapMbtiles: AssetPathResolution;
     poisDb: AssetPathResolution;
     locationAliasesDb: AssetPathResolution;
     walkingRouting: AssetPathResolution;
@@ -90,6 +91,7 @@ export class ReactNativeOfflineAssetLoader {
     public async getAssetPathReport(): Promise<RuntimeAssetPathReport> {
         return {
             model: await this.resolveModelPath(),
+            mapMbtiles: await this.resolveRelativePath('map-mbtiles', 'maps/london.mbtiles'),
             poisDb: await this.resolveSqlitePath(OFFLINE_RUNTIME_ASSET_CONTRACTS.poisDatabase),
             locationAliasesDb: await this.resolveSqlitePath(OFFLINE_RUNTIME_ASSET_CONTRACTS.locationAliasesDatabase),
             walkingRouting: await this.resolveRelativePath(

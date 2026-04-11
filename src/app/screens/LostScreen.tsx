@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
@@ -29,8 +29,8 @@ function mapPipelineError(error: unknown): FlowAlert {
 }
 
 export function LostScreen(): React.JSX.Element {
-    const { mobilePipeline, permissions, voiceCapabilities } = useAppShell();
-    const [signpostText, setSignpostText] = useState('Green Park');
+    const { mobilePipeline, permissions, runtimeState, voiceCapabilities } = useAppShell();
+    const [signpostText, setSignpostText] = useState('Park');
     const [askPeopleText, setAskPeopleText] = useState('I am lost near Bank');
     const [signpostResult, setSignpostResult] = useState<ReturnType<typeof mobilePipeline.entityResolver.resolve> | null>(null);
     const [askPeopleResult, setAskPeopleResult] = useState<Awaited<ReturnType<typeof mobilePipeline.queryPipeline.execute>> | null>(null);
@@ -87,7 +87,12 @@ export function LostScreen(): React.JSX.Element {
             <SystemAlertsCard />
             <SectionCard>
                 <Text style={styles.sectionTitle}>Signpost flow</Text>
+                <Text style={shellStyles.copy}>Runtime source: {runtimeState.source}. This flow resolves exact, alias, and disambiguation cases locally before asking for route help.</Text>
                 <TextInput value={signpostText} onChangeText={setSignpostText} style={styles.input} placeholder="Type the station sign you can see" placeholderTextColor="#7c8a85" />
+                <View style={styles.exampleRow}>
+                    <Pressable onPress={() => setSignpostText('Green Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Try exact match</Text></Pressable>
+                    <Pressable onPress={() => setSignpostText('Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Try disambiguation</Text></Pressable>
+                </View>
                 <Pressable onPress={resolveSignpost} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Resolve signpost</Text></Pressable>
                 {signpostResult ? (
                     <>
@@ -105,17 +110,19 @@ export function LostScreen(): React.JSX.Element {
                 <Text style={styles.sectionTitle}>Ask People flow</Text>
                 <Text style={shellStyles.copy}>OS STT available: {voiceCapabilities?.stt ? 'yes' : 'no'}. Low-confidence STT stays surfaced as an explicit shell error state.</Text>
                 <TextInput value={askPeopleText} onChangeText={setAskPeopleText} style={styles.input} placeholder="Simulated speech transcript" placeholderTextColor="#7c8a85" />
+                <View style={styles.exampleRow}>
+                    <Pressable onPress={() => setAskPeopleText('I am lost near Green Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Resolved example</Text></Pressable>
+                    <Pressable onPress={() => setAskPeopleText('Take me to Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Ambiguous example</Text></Pressable>
+                </View>
                 {lowConfidenceTranscript ? <StatusChip label="low-confidence STT" tone="warn" /> : null}
                 <Pressable onPress={() => void askPeople()} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Normalize and resolve</Text></Pressable>
                 {askPeopleResult ? (
                     <>
                         <StatusChip label={askPeopleResult.status} tone={askPeopleResult.status === 'complete' ? 'good' : askPeopleResult.status === 'needs_disambiguation' ? 'warn' : 'bad'} />
                         <Text style={shellStyles.copy}>{askPeopleResult.rendered?.text ?? 'No spoken match found.'}</Text>
-                        {askPeopleResult.origin?.status === 'disambiguation'
-                            ? askPeopleResult.origin.candidates.map((candidate) => (
+                        {(askPeopleResult.origin?.status === 'disambiguation' ? askPeopleResult.origin.candidates : askPeopleResult.destination?.candidates ?? []).map((candidate) => (
                                 <Text key={candidate.entity.id} style={shellStyles.copy}>Candidate: {candidate.entity.canonicalName}</Text>
-                            ))
-                            : null}
+                            ))}
                     </>
                 ) : null}
             </SectionCard>
@@ -144,6 +151,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 12,
     },
+    exampleRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
     primaryButton: {
         alignSelf: 'flex-start',
         backgroundColor: colors.accent,
@@ -153,6 +165,17 @@ const styles = StyleSheet.create({
     },
     primaryButtonText: {
         color: '#fffaf1',
+        fontWeight: '700',
+    },
+    secondaryButton: {
+        alignSelf: 'flex-start',
+        backgroundColor: '#ece4d7',
+        borderRadius: 14,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+    },
+    secondaryButtonText: {
+        color: colors.ink,
         fontWeight: '700',
     },
 });
