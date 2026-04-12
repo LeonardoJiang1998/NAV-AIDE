@@ -3,7 +3,7 @@
     "generatedBy": "scripts/data-pipeline/build-tube-graph.js",
     "assetType": "tube-graph",
     "fixtureStrategy": {
-        "description": "Use a small London Underground subgraph for Node tests and Stage 2 validation, then replace it with a full generated export once licensed route data is wired into the offline build.",
+        "description": "Central London Underground subgraph covering the most recognizable Zone 1/2 stations. Replace with a full generated export once licensed route data is wired into the offline build.",
         "sourceOfTruth": "scripts/data-pipeline/seeds/tubeGraph.seed.json",
         "requiredFields": [
             "nodes",
@@ -13,62 +13,95 @@
         ]
     },
     "nodes": [
-        {
-            "id": "waterloo",
-            "name": "Waterloo",
-            "zone": 1
-        },
-        {
-            "id": "westminster",
-            "name": "Westminster",
-            "zone": 1
-        },
-        {
-            "id": "green-park",
-            "name": "Green Park",
-            "zone": 1
-        },
-        {
-            "id": "baker-street",
-            "name": "Baker Street",
-            "zone": 1
-        },
-        {
-            "id": "paddington",
-            "name": "Paddington",
-            "zone": 1
-        }
+        { "id": "waterloo", "name": "Waterloo", "zone": 1 },
+        { "id": "westminster", "name": "Westminster", "zone": 1 },
+        { "id": "green-park", "name": "Green Park", "zone": 1 },
+        { "id": "baker-street", "name": "Baker Street", "zone": 1 },
+        { "id": "paddington", "name": "Paddington", "zone": 1 },
+        { "id": "bank", "name": "Bank", "zone": 1 },
+        { "id": "oxford-circus", "name": "Oxford Circus", "zone": 1 },
+        { "id": "victoria", "name": "Victoria", "zone": 1 },
+        { "id": "kings-cross-st-pancras", "name": "King's Cross St Pancras", "zone": 1 },
+        { "id": "liverpool-street", "name": "Liverpool Street", "zone": 1 },
+        { "id": "london-bridge", "name": "London Bridge", "zone": 1 },
+        { "id": "canary-wharf", "name": "Canary Wharf", "zone": 2 },
+        { "id": "bond-street", "name": "Bond Street", "zone": 1 },
+        { "id": "piccadilly-circus", "name": "Piccadilly Circus", "zone": 1 },
+        { "id": "leicester-square", "name": "Leicester Square", "zone": 1 },
+        { "id": "covent-garden", "name": "Covent Garden", "zone": 1 },
+        { "id": "holborn", "name": "Holborn", "zone": 1 },
+        { "id": "tottenham-court-road", "name": "Tottenham Court Road", "zone": 1 },
+        { "id": "euston", "name": "Euston", "zone": 1 },
+        { "id": "warren-street", "name": "Warren Street", "zone": 1 },
+        { "id": "marylebone", "name": "Marylebone", "zone": 1 },
+        { "id": "edgware-road", "name": "Edgware Road", "zone": 1 },
+        { "id": "notting-hill-gate", "name": "Notting Hill Gate", "zone": 1 },
+        { "id": "south-kensington", "name": "South Kensington", "zone": 1 },
+        { "id": "knightsbridge", "name": "Knightsbridge", "zone": 1 },
+        { "id": "embankment", "name": "Embankment", "zone": 1 },
+        { "id": "charing-cross", "name": "Charing Cross", "zone": 1 },
+        { "id": "chancery-lane", "name": "Chancery Lane", "zone": 1 },
+        { "id": "st-pauls", "name": "St Paul's", "zone": 1 },
+        { "id": "monument", "name": "Monument", "zone": 1 },
+        { "id": "tower-hill", "name": "Tower Hill", "zone": 1 },
+        { "id": "stratford", "name": "Stratford", "zone": 2 },
+        { "id": "camden-town", "name": "Camden Town", "zone": 2 },
+        { "id": "farringdon", "name": "Farringdon", "zone": 1 },
+        { "id": "moorgate", "name": "Moorgate", "zone": 1 }
     ],
     "edges": [
-        {
-            "from": "waterloo",
-            "to": "westminster",
-            "lineId": "jubilee",
-            "travelMinutes": 2
-        },
-        {
-            "from": "westminster",
-            "to": "green-park",
-            "lineId": "jubilee",
-            "travelMinutes": 2
-        },
-        {
-            "from": "green-park",
-            "to": "baker-street",
-            "lineId": "jubilee",
-            "travelMinutes": 4
-        },
-        {
-            "from": "waterloo",
-            "to": "green-park",
-            "lineId": "bakerloo",
-            "travelMinutes": 6
-        },
-        {
-            "from": "baker-street",
-            "to": "paddington",
-            "lineId": "circle",
-            "travelMinutes": 5
-        }
+        { "from": "waterloo", "to": "westminster", "lineId": "jubilee", "travelMinutes": 2 },
+        { "from": "westminster", "to": "green-park", "lineId": "jubilee", "travelMinutes": 2 },
+        { "from": "green-park", "to": "bond-street", "lineId": "jubilee", "travelMinutes": 1 },
+        { "from": "bond-street", "to": "baker-street", "lineId": "jubilee", "travelMinutes": 2 },
+        { "from": "westminster", "to": "london-bridge", "lineId": "jubilee", "travelMinutes": 3 },
+        { "from": "london-bridge", "to": "canary-wharf", "lineId": "jubilee", "travelMinutes": 6 },
+        { "from": "canary-wharf", "to": "stratford", "lineId": "jubilee", "travelMinutes": 8 },
+        { "from": "paddington", "to": "edgware-road", "lineId": "bakerloo", "travelMinutes": 1 },
+        { "from": "edgware-road", "to": "baker-street", "lineId": "bakerloo", "travelMinutes": 2 },
+        { "from": "baker-street", "to": "marylebone", "lineId": "bakerloo", "travelMinutes": 1 },
+        { "from": "marylebone", "to": "oxford-circus", "lineId": "bakerloo", "travelMinutes": 3 },
+        { "from": "oxford-circus", "to": "piccadilly-circus", "lineId": "bakerloo", "travelMinutes": 1 },
+        { "from": "piccadilly-circus", "to": "charing-cross", "lineId": "bakerloo", "travelMinutes": 1 },
+        { "from": "charing-cross", "to": "embankment", "lineId": "bakerloo", "travelMinutes": 1 },
+        { "from": "embankment", "to": "waterloo", "lineId": "bakerloo", "travelMinutes": 2 },
+        { "from": "oxford-circus", "to": "tottenham-court-road", "lineId": "central", "travelMinutes": 2 },
+        { "from": "tottenham-court-road", "to": "holborn", "lineId": "central", "travelMinutes": 1 },
+        { "from": "holborn", "to": "chancery-lane", "lineId": "central", "travelMinutes": 1 },
+        { "from": "chancery-lane", "to": "st-pauls", "lineId": "central", "travelMinutes": 1 },
+        { "from": "st-pauls", "to": "bank", "lineId": "central", "travelMinutes": 1 },
+        { "from": "bank", "to": "liverpool-street", "lineId": "central", "travelMinutes": 2 },
+        { "from": "liverpool-street", "to": "stratford", "lineId": "central", "travelMinutes": 6 },
+        { "from": "bond-street", "to": "oxford-circus", "lineId": "central", "travelMinutes": 1 },
+        { "from": "victoria", "to": "green-park", "lineId": "victoria", "travelMinutes": 1 },
+        { "from": "green-park", "to": "oxford-circus", "lineId": "victoria", "travelMinutes": 2 },
+        { "from": "oxford-circus", "to": "warren-street", "lineId": "victoria", "travelMinutes": 2 },
+        { "from": "warren-street", "to": "euston", "lineId": "victoria", "travelMinutes": 1 },
+        { "from": "euston", "to": "kings-cross-st-pancras", "lineId": "victoria", "travelMinutes": 2 },
+        { "from": "piccadilly-circus", "to": "leicester-square", "lineId": "piccadilly", "travelMinutes": 1 },
+        { "from": "leicester-square", "to": "covent-garden", "lineId": "piccadilly", "travelMinutes": 1 },
+        { "from": "covent-garden", "to": "holborn", "lineId": "piccadilly", "travelMinutes": 1 },
+        { "from": "holborn", "to": "kings-cross-st-pancras", "lineId": "piccadilly", "travelMinutes": 4 },
+        { "from": "south-kensington", "to": "knightsbridge", "lineId": "piccadilly", "travelMinutes": 2 },
+        { "from": "knightsbridge", "to": "green-park", "lineId": "piccadilly", "travelMinutes": 3 },
+        { "from": "piccadilly-circus", "to": "green-park", "lineId": "piccadilly", "travelMinutes": 1 },
+        { "from": "paddington", "to": "notting-hill-gate", "lineId": "circle", "travelMinutes": 3 },
+        { "from": "notting-hill-gate", "to": "south-kensington", "lineId": "district", "travelMinutes": 4 },
+        { "from": "south-kensington", "to": "victoria", "lineId": "district", "travelMinutes": 3 },
+        { "from": "victoria", "to": "westminster", "lineId": "district", "travelMinutes": 3 },
+        { "from": "westminster", "to": "embankment", "lineId": "circle", "travelMinutes": 1 },
+        { "from": "embankment", "to": "monument", "lineId": "district", "travelMinutes": 5 },
+        { "from": "monument", "to": "tower-hill", "lineId": "district", "travelMinutes": 1 },
+        { "from": "tower-hill", "to": "liverpool-street", "lineId": "circle", "travelMinutes": 3 },
+        { "from": "baker-street", "to": "kings-cross-st-pancras", "lineId": "metropolitan", "travelMinutes": 5 },
+        { "from": "kings-cross-st-pancras", "to": "farringdon", "lineId": "circle", "travelMinutes": 3 },
+        { "from": "farringdon", "to": "moorgate", "lineId": "circle", "travelMinutes": 2 },
+        { "from": "moorgate", "to": "liverpool-street", "lineId": "circle", "travelMinutes": 1 },
+        { "from": "camden-town", "to": "euston", "lineId": "northern", "travelMinutes": 4 },
+        { "from": "tottenham-court-road", "to": "leicester-square", "lineId": "northern", "travelMinutes": 1 },
+        { "from": "leicester-square", "to": "charing-cross", "lineId": "northern", "travelMinutes": 1 },
+        { "from": "waterloo", "to": "london-bridge", "lineId": "northern", "travelMinutes": 3 },
+        { "from": "london-bridge", "to": "bank", "lineId": "northern", "travelMinutes": 2 },
+        { "from": "bank", "to": "monument", "lineId": "walking-transfer", "travelMinutes": 1 }
     ]
 }

@@ -7,6 +7,7 @@ import { type POIResult, POIService } from '../poi/POIService';
 import { Dijkstra, type ShortestPathResult, type WeightedGraph } from '../routing/Dijkstra';
 import { ValhallaBridge, type WalkingRouteResult } from '../routing/ValhallaBridge';
 import { CacheAwareDisruptionService, type DisruptionEvent } from '../services/DisruptionService';
+import { buildTubeSegments, type TubeSegment } from './TubeGraphTransforms';
 import { EntityResolver, type EntityRecord, type ResolutionResult } from './EntityResolver';
 
 export interface QueryPipelineDependencies {
@@ -31,6 +32,7 @@ export interface QueryPipelineResult {
     destination?: ResolutionResult;
     poiResults?: POIResult[];
     route?: ShortestPathResult | null;
+    tubeSegments?: TubeSegment[];
     walking?: WalkingRouteResult;
     disruptions: DisruptionEvent[];
     rendered: RenderedResponse | null;
@@ -110,6 +112,8 @@ export class QueryPipeline {
             destination.bestCandidate.entity.id
         );
 
+        const tubeSegments = route ? buildTubeSegments(route.path, this.dependencies.graph) : [];
+
         const walking = await this.dependencies.walkingRouter.route({
             originName: origin.bestCandidate.entity.canonicalName,
             destinationName: destination.bestCandidate.entity.canonicalName,
@@ -141,6 +145,7 @@ export class QueryPipeline {
             origin,
             destination,
             route,
+            tubeSegments,
             walking,
             disruptions,
             rendered,

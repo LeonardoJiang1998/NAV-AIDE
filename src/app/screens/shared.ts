@@ -4,10 +4,11 @@ import { colors } from '../theme';
 
 export const shellStyles = StyleSheet.create({
     screen: {
-        flex: 1,
+        flexGrow: 1,
         backgroundColor: '#f0eadf',
         gap: 18,
         padding: 20,
+        paddingBottom: 48,
     },
     title: {
         color: colors.ink,

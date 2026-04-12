@@ -30,5 +30,22 @@ target 'NavAideShell' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # maplibre-react-native injects the Swift package product dependency (MapLibre)
+    # into the pod and app targets during CocoaPods post-install.
+    $MLRN.post_install(installer)
+
+    # llama.rn 0.5.7 pins -std=c++17 via its podspec, but React Native 0.85's
+    # ReactCommon bridging headers use C++20 `requires` constraints. CocoaPods
+    # writes OTHER_CPLUSPLUSFLAGS into the llama-rn xcconfig files, so patch
+    # those directly to replace -std=c++17 with -std=c++20.
+    llama_xcconfig_dir = File.join(installer.sandbox.target_support_files_root, 'llama-rn')
+    if Dir.exist?(llama_xcconfig_dir)
+      Dir.glob(File.join(llama_xcconfig_dir, '*.xcconfig')).each do |xcconfig_path|
+        contents = File.read(xcconfig_path)
+        patched = contents.gsub('-std=c++17', '-std=c++20')
+        File.write(xcconfig_path, patched) if patched != contents
+      end
+    end
   end
 end
