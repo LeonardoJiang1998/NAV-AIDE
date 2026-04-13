@@ -187,5 +187,90 @@
         "expectedPoiNames": [],
         "expectedWalkingStatus": null,
         "allowedPlaceNames": []
+    },
+    {
+        "id": "route-same-origin-destination",
+        "rawQuery": "How do I get from Waterloo to Waterloo?",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": "Waterloo",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "complete",
+        "expectedIntent": "route",
+        "expectedRenderedText": "Route from Waterloo to Waterloo costs 0 minutes.",
+        "expectedRouteCost": 0,
+        "expectedWalkingStatus": "ok",
+        "expectedOriginStatus": "resolved",
+        "expectedDestinationStatus": "resolved",
+        "allowedPlaceNames": [
+            "Waterloo"
+        ]
+    },
+    {
+        "id": "nearest-station-westminster",
+        "rawQuery": "Where is Westminster station?",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "nearest_station",
+            "origin": "Westminster",
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "complete",
+        "expectedIntent": "nearest_station",
+        "expectedRenderedText": "nearest_station match at Westminster.",
+        "expectedOriginStatus": "resolved",
+        "expectedWalkingStatus": null,
+        "allowedPlaceNames": [
+            "Westminster"
+        ]
+    },
+    {
+        "id": "unknown-intent",
+        "rawQuery": "Tell me a joke about London",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "unknown",
+            "origin": null,
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "unresolved",
+        "expectedIntent": "unknown",
+        "expectedRenderedText": null,
+        "expectedWalkingStatus": null,
+        "allowedPlaceNames": []
+    },
+    {
+        "id": "route-walking-unavailable",
+        "rawQuery": "Walk from Westminster to Green Park",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": "Westminster",
+            "destination": "Green Park",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "complete",
+        "expectedIntent": "route",
+        "expectedRenderedText": "Route from Westminster to Green Park costs 2 minutes.",
+        "expectedRouteCost": 2,
+        "expectedWalkingStatus": "ok",
+        "expectedOriginStatus": "resolved",
+        "expectedDestinationStatus": "resolved",
+        "expectedDisruptionIds": [
+            "station-green-park"
+        ],
+        "allowedPlaceNames": [
+            "Westminster",
+            "Green Park"
+        ]
     }
 ]
