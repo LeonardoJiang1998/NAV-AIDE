@@ -74,7 +74,7 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
     const [runtimeState, setRuntimeState] = useState<MobilePipelineRuntimeState>(mobilePipeline.runtimeState);
     const [voiceCapabilities, setVoiceCapabilities] = useState<VoiceRuntimeStatus | null>(null);
     const [preferences, setPreferences] = useState<PreferencesState>({ voiceEnabled: true, preferWalkingFirst: false });
-    const [permissions, setPermissions] = useState<PermissionsState>({ gps: false, microphone: true });
+    const [permissions, setPermissions] = useState<PermissionsState>({ gps: false, microphone: false });
     const [feedbackQueue, setFeedbackQueue] = useState<FeedbackEntry[]>([]);
     const [stagedDestination, setStagedDestination] = useState<string | null>(null);
     const assetDiagnostics = useMemo<AssetDiagnostics>(() => {

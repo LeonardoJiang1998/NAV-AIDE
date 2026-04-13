@@ -1,0 +1,16 @@
+{
+  "version": 8,
+  "name": "NAV-AIDE Offline",
+  "sources": {},
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": "#f0ede6"
+      }
+    }
+  ],
+  "center": [-0.1276, 51.5074],
+  "zoom": 12
+}
