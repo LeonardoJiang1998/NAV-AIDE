@@ -5,6 +5,7 @@ import {
     CacheAwareDisruptionService,
     StaticDisruptionSource,
     type DisruptionEvent,
+    type DisruptionSource,
     type CachePolicy,
 } from '../../src/core/services/DisruptionService.js';
 
@@ -65,7 +66,7 @@ test('CacheAwareDisruptionService returns fresh data on first call', async () =>
 test('CacheAwareDisruptionService returns cached data within TTL', async () => {
     let currentTime = 1000;
     let fetchCount = 0;
-    const countingSource: StaticDisruptionSource & { fetch: (names: string[]) => Promise<DisruptionEvent[]> } = {
+    const countingSource: DisruptionSource = {
         async fetch(placeNames: string[]) {
             fetchCount += 1;
             return events.filter((e) => e.affectedPlaceNames.some((n) => placeNames.includes(n)));
