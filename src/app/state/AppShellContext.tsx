@@ -5,6 +5,7 @@ import { AssetManager, type AssetStatus } from '../assets/AssetManager';
 import type { LocalModelStatus } from '../model/LocalModelManager';
 import { createMobilePipeline, type MobilePipeline, type MobilePipelineRuntimeState } from '../pipeline/createMobilePipeline';
 import { sampleDestinations } from '../pipeline/mobileFixtures';
+import { createPersistentStorage, type PersistentStorage } from '../storage/PersistentStorage';
 import { VoiceServices, type VoiceRuntimeStatus } from '../voice/VoiceServices';
 
 export interface FeedbackEntry {
@@ -67,6 +68,7 @@ const AppShellContext = createContext<AppShellContextValue | null>(null);
 export function AppShellProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
     const mobilePipeline = useMemo(() => createMobilePipeline(), []);
     const voiceServices = useMemo(() => new VoiceServices(), []);
+    const storage = useMemo<PersistentStorage>(() => createPersistentStorage(), []);
     const [assetStatus, setAssetStatus] = useState<AssetStatus | null>(null);
     const [modelStatus, setModelStatus] = useState<LocalModelStatus | null>(null);
     const [runtimeState, setRuntimeState] = useState<MobilePipelineRuntimeState>(mobilePipeline.runtimeState);
@@ -190,6 +192,20 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
     };
 
     useEffect(() => {
+        const hydrate = async () => {
+            const [savedPrefs, savedPerms, savedFeedback] = await Promise.all([
+                storage.read<PreferencesState>('preferences'),
+                storage.read<PermissionsState>('permissions'),
+                storage.read<FeedbackEntry[]>('feedbackQueue'),
+            ]);
+            if (savedPrefs) setPreferences(savedPrefs);
+            if (savedPerms) setPermissions(savedPerms);
+            if (savedFeedback) setFeedbackQueue(savedFeedback);
+        };
+        void hydrate();
+    }, [storage]);
+
+    useEffect(() => {
         void refreshSystemState();
     }, [mobilePipeline]);
 
@@ -212,16 +228,25 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
         refreshSystemState,
         requestDemoPermissions,
         updatePreference(key, value) {
-            setPreferences((current) => ({ ...current, [key]: value }));
+            setPreferences((current) => {
+                const next = { ...current, [key]: value };
+                void storage.write('preferences', next);
+                return next;
+            });
         },
         updatePermission(key, value) {
-            setPermissions((current) => ({ ...current, [key]: value }));
+            setPermissions((current) => {
+                const next = { ...current, [key]: value };
+                void storage.write('permissions', next);
+                return next;
+            });
         },
         enqueueFeedback(entry) {
-            setFeedbackQueue((current) => [
-                ...current,
-                { ...entry, id: `${Date.now()}-${current.length}` },
-            ]);
+            setFeedbackQueue((current) => {
+                const next = [...current, { ...entry, id: `${Date.now()}-${current.length}` }];
+                void storage.write('feedbackQueue', next);
+                return next;
+            });
         },
         stageDestination(destination) {
             setStagedDestination(destination);

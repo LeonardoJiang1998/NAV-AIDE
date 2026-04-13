@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
 import { SystemAlertsCard } from '../components/SystemAlertsCard';
+import { DownloadScreen } from '../download/DownloadScreen';
 import { useAppShell } from '../state/AppShellContext';
 import { colors } from '../theme';
 import { shellStyles } from './shared';
@@ -96,6 +97,7 @@ export function SettingsScreen(): React.JSX.Element {
                 <Text style={shellStyles.copy}>Model backend: {modelStatus?.backend ?? 'llama.rn'}</Text>
                 <Text style={shellStyles.copy}>Model issue: {modelStatus?.failureReason ?? 'none'}</Text>
             </SectionCard>
+            <DownloadScreen />
             <SectionCard>
                 <Text style={styles.sectionTitle}>Attributions</Text>
                 <Text style={shellStyles.copy}>AiDEMAIN Ltd.</Text>

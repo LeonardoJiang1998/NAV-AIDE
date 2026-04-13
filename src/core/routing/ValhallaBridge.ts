@@ -22,6 +22,17 @@ export class ValhallaBridge {
     }
 }
 
+/**
+ * MVP walking router that reports asset-aware status.
+ *
+ * Real Valhalla C++ bindings require a native module wrapping the Valhalla
+ * routing engine, which is out of scope for the MVP. This stub returns
+ * hardcoded walking estimates when assets are available and a clean
+ * "asset-unavailable" status when they are not.
+ *
+ * The asset-availability check is the critical piece: it ensures the UI
+ * correctly communicates whether walking directions are possible.
+ */
 export class AssetAwareWalkingRouter implements OfflineWalkingRouter {
     public constructor(private readonly assetsAvailable: boolean) { }
 

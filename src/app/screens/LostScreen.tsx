@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { SectionCard } from '../components/SectionCard';
@@ -6,6 +6,7 @@ import { StatusChip } from '../components/StatusChip';
 import { SystemAlertsCard } from '../components/SystemAlertsCard';
 import { useAppShell } from '../state/AppShellContext';
 import { colors } from '../theme';
+import { useSpeechToText } from '../voice/useSpeechToText';
 import { shellStyles } from './shared';
 
 interface FlowAlert {
@@ -35,6 +36,32 @@ export function LostScreen(): React.JSX.Element {
     const [signpostResult, setSignpostResult] = useState<ReturnType<typeof mobilePipeline.entityResolver.resolve> | null>(null);
     const [askPeopleResult, setAskPeopleResult] = useState<Awaited<ReturnType<typeof mobilePipeline.queryPipeline.execute>> | null>(null);
     const [flowAlert, setFlowAlert] = useState<FlowAlert | null>(null);
+    const stt = useSpeechToText();
+
+    useEffect(() => {
+        if (stt.transcript) {
+            setAskPeopleText(stt.transcript);
+        }
+    }, [stt.transcript]);
+
+    useEffect(() => {
+        if (stt.error) {
+            setFlowAlert({ label: 'speech error', detail: stt.error, tone: 'bad' });
+        }
+    }, [stt.error]);
+
+    const toggleSpeakButton = async () => {
+        if (!permissions.microphone || !voiceCapabilities?.stt) {
+            setFlowAlert({ label: 'stt unavailable', detail: 'OS speech input is not available because microphone permission or STT capability is missing.', tone: 'bad' });
+            return;
+        }
+
+        if (stt.isListening) {
+            await stt.stop();
+        } else {
+            await stt.start();
+        }
+    };
 
     const lowConfidenceTranscript = askPeopleText.trim().length < 10 || askPeopleText.includes('[unclear]');
 
@@ -111,11 +138,16 @@ export function LostScreen(): React.JSX.Element {
                 <Text style={shellStyles.copy}>OS STT available: {voiceCapabilities?.stt ? 'yes' : 'no'}. Low-confidence STT stays surfaced as an explicit shell error state.</Text>
                 {!voiceCapabilities?.stt ? <Text style={shellStyles.copy}>Safe demo fallback: use typed transcript examples below instead of live speech.</Text> : null}
                 {demoReadiness.mode === 'fixture-fallback-mode' ? <Text style={shellStyles.copy}>Fixture fallback remains explicit in this flow so internal demos do not imply production asset coverage.</Text> : null}
-                <TextInput value={askPeopleText} onChangeText={setAskPeopleText} style={styles.input} placeholder="Simulated speech transcript" placeholderTextColor="#7c8a85" />
+                <TextInput value={askPeopleText} onChangeText={setAskPeopleText} style={styles.input} placeholder="Speech transcript (or type manually)" placeholderTextColor="#7c8a85" />
                 <View style={styles.exampleRow}>
+                    <Pressable onPress={() => void toggleSpeakButton()} style={stt.isListening ? styles.primaryButton : styles.secondaryButton}>
+                        <Text style={stt.isListening ? styles.primaryButtonText : styles.secondaryButtonText}>{stt.isListening ? 'Stop listening' : 'Speak'}</Text>
+                    </Pressable>
                     <Pressable onPress={() => setAskPeopleText('I am lost near Green Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Resolved example</Text></Pressable>
                     <Pressable onPress={() => setAskPeopleText('Take me to Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Ambiguous example</Text></Pressable>
                 </View>
+                {stt.isListening ? <Text style={shellStyles.copy}>Listening...</Text> : null}
+                {stt.partialTranscript ? <Text style={shellStyles.copy}>Hearing: {stt.partialTranscript}</Text> : null}
                 {lowConfidenceTranscript ? <StatusChip label="low-confidence STT" tone="warn" /> : null}
                 <Pressable onPress={() => void askPeople()} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Normalize and resolve</Text></Pressable>
                 {askPeopleResult ? (

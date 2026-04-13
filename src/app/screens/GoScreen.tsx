@@ -9,6 +9,7 @@ import { SystemAlertsCard } from '../components/SystemAlertsCard';
 import { DownloadScreen } from '../download/DownloadScreen';
 import { useAppShell } from '../state/AppShellContext';
 import { colors } from '../theme';
+import { useSpeechToText } from '../voice/useSpeechToText';
 import { shellStyles } from './shared';
 
 const transportModes = ['Tube', 'Walk', 'Mixed'];
@@ -41,6 +42,32 @@ export function GoScreen(): React.JSX.Element {
     const [result, setResult] = useState<Awaited<ReturnType<typeof mobilePipeline.queryPipeline.execute>> | null>(null);
     const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
     const [flowAlert, setFlowAlert] = useState<FlowAlert | null>(null);
+    const stt = useSpeechToText();
+
+    useEffect(() => {
+        if (stt.transcript) {
+            setQuery(stt.transcript);
+        }
+    }, [stt.transcript]);
+
+    useEffect(() => {
+        if (stt.error) {
+            setFlowAlert({ label: 'speech error', detail: stt.error, tone: 'bad' });
+        }
+    }, [stt.error]);
+
+    const toggleVoiceSearch = async () => {
+        if (!voiceCapabilities?.stt || !permissions.microphone) {
+            setFlowAlert({ label: 'stt unavailable', detail: 'OS speech input requires microphone permission and STT capability. Check Settings.', tone: 'bad' });
+            return;
+        }
+
+        if (stt.isListening) {
+            await stt.stop();
+        } else {
+            await stt.start();
+        }
+    };
 
     const statusTone = useMemo(() => {
         if (!assetStatus?.ready) {
@@ -172,11 +199,15 @@ export function GoScreen(): React.JSX.Element {
                     <Pressable onPress={() => void runQuery()} style={styles.primaryButton}>
                         <Text style={styles.primaryButtonText}>Run search</Text>
                     </Pressable>
+                    <Pressable onPress={() => void toggleVoiceSearch()} style={stt.isListening ? styles.primaryButton : styles.secondaryButton}>
+                        <Text style={stt.isListening ? styles.primaryButtonText : styles.secondaryButtonText}>{stt.isListening ? 'Stop listening' : 'Voice search'}</Text>
+                    </Pressable>
                     <Pressable onPress={() => void playVoice()} style={styles.secondaryButton}>
                         <Text style={styles.secondaryButtonText}>Play TTS</Text>
                     </Pressable>
                 </View>
-                <Text style={shellStyles.copy}>Voice search hook is represented by OS STT capability in Settings; text search routes through the mobile pipeline adapter here.</Text>
+                {stt.isListening ? <Text style={shellStyles.copy}>Listening...</Text> : null}
+                {stt.partialTranscript ? <Text style={shellStyles.copy}>Hearing: {stt.partialTranscript}</Text> : null}
                 {!voiceCapabilities?.stt ? <Text style={shellStyles.copy}>STT did not validate on this device check. Text entry remains the safe demo path.</Text> : null}
             </SectionCard>
             {flowAlert ? (
