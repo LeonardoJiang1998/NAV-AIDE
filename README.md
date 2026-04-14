@@ -6,14 +6,25 @@ NAV AiDE is an offline-first London travel assistant built for international tou
 
 ## Features
 
+- **Offline tube, DLR, Elizabeth line, and Overground routing** — Dijkstra shortest-path over a 435-station TfL-sourced graph with 575 line segments
+- **On-device AI for intent extraction** — Gemma 3 (1B instruction-tuned GGUF) running via `llama.rn`; produces structured JSON intent and natural-language responses, never resolves locations directly
+- **POI search over 860 London attractions** — museums, galleries, theatres, landmarks, parks, viewpoints, indexed via SQLite FTS5 for full-text search
 - **Voice input in 140+ languages** — OS-native speech-to-text with on-device intent extraction
-- **Offline tube and bus routing** — Dijkstra shortest-path on a local transport graph
-- **Walking directions** — offline turn-by-turn via Valhalla tile engine
-- **POI search** — full-text search over local points of interest using SQLite FTS5
-- **On-device AI** — Gemma 4 E2B running locally via `llama.rn`, used strictly for intent extraction and natural-language responses
-- **Offline maps** — MapLibre GL rendering with bundled MBTiles
-- **LOST? recovery helper** — a dedicated screen for tourists who are disoriented, providing step-by-step guidance to reorient
+- **Walking directions** — offline turn-by-turn via Valhalla tile engine (stub today, native integration planned)
+- **Offline maps** — MapLibre GL rendering with bundled MBTiles (in progress)
+- **LOST? recovery helper** — a dedicated screen for disoriented tourists with signpost resolution and "ask a local" normalisation
 - **Text-to-speech output** — OS-native TTS reads responses aloud in the user's language
+
+## Data at a Glance
+
+| Source | Dataset | Size |
+|---|---|---|
+| TfL Line Sequence API | Underground, DLR, Elizabeth, Overground stations | 435 stations, 575 edges |
+| TfL Line Sequence API | Line list (tube + DLR + Elizabeth + 6 Overground branches) | 19 lines |
+| TfL-derived aliases | Canonical + typo-tolerant station names | 478 alias rows (SQLite + FTS5) |
+| OpenStreetMap (Overpass API) | Greater London POIs (museum, gallery, landmark, theatre, arts_centre, viewpoint, park, zoo, aquarium, attraction) | 860 POIs (SQLite + FTS5) |
+
+All raw source responses are checked in under `scripts/data-pipeline/tfl-source/` so the pipeline is reproducible offline.
 
 ## App Screens
 
@@ -152,16 +163,24 @@ NAV-AIDE/
 
 ## Data Pipeline
 
-NAV AiDE uses a deterministic, fixture-based data pipeline to generate its offline assets:
+NAV AiDE uses a deterministic data pipeline to build its offline assets from real TfL + OSM sources:
 
-1. **`build-tube-graph.js`** — generates `assets/tubeGraph.json` (London tube network)
-2. **`generate-bus-routes.js`** — generates `assets/busRoutes.json` (London bus routes)
-3. **`generate-pois-db.js`** — generates SQL scaffolds for the POI database
-4. **`generate-location-aliases-db.js`** — generates SQL scaffolds for location aliases
-5. **`assemble-sqlite-dbs.js`** — assembles real SQLite databases from the SQL scaffolds
-6. **`validate-sqlite-dbs.ts`** — validates tables, FTS indices, and seed rows
+1. **`build-tube-graph-from-tfl.js`** — ingests TfL Line Sequence responses (`scripts/data-pipeline/tfl-source/sequences/`) into `scripts/data-pipeline/seeds/tubeGraph.seed.json`
+2. **`build-tube-graph.js`** — validates the seed and writes `assets/tubeGraph.json`
+3. **`build-pois-from-osm.js`** — filters the Overpass POI dump (`scripts/data-pipeline/tfl-source/london-pois-osm.json`) into `scripts/data-pipeline/seeds/pois.seed.json`, keeping tourist-relevant categories and skipping noise (e.g. 2,300+ memorials)
+4. **`generate-pois-db.js`** — emits schema + seed SQL for the POI database
+5. **`generate-location-aliases-db.js`** — reads the deployed `assets/tubeGraph.json` and emits schema + seed SQL for the alias database (with `&` / `and`, `Street` / `St`, apostrophe variants, and King's-Cross multi-alias)
+6. **`generate-bus-routes.js`** — generates `assets/busRoutes.json` (bus routes; still fixture-scale pending Phase 2.2)
+7. **`assemble-sqlite-dbs.js`** — assembles real SQLite databases (with FTS5 indexes) from the generated SQL
+8. **`validate-sqlite-dbs.ts`** — validates tables, FTS indices, seed counts, and EntityResolver lookup against the live DBs
 
-The current assets are deterministic fixtures suitable for development and testing. Production data ingestion (licensed transport datasets, curated POI exports) will replace these fixtures in a later phase.
+Full pipeline in one step:
+
+```bash
+npm run stage2:assets    # stage2:sql + stage2:assemble + stage2:validate
+```
+
+The raw TfL sequence JSONs, the Overpass query, and the OSM dump are committed in `scripts/data-pipeline/tfl-source/` so the pipeline can be re-run offline without hitting the network.
 
 ## Testing
 
@@ -227,14 +246,24 @@ These rules define the project's identity and must not be violated:
 |----------|------------|
 | Framework | React Native 0.85 (bare workflow) |
 | Language | TypeScript (strict mode, ES2022) |
-| On-device AI | Gemma 4 E2B via `llama.rn` |
+| On-device AI | Gemma 3 1B IT Q4_K_M via `llama.rn` 0.5.11 (Gemma 4 E2B queued for when `llama.rn` 0.12 stabilises) |
 | Maps | MapLibre GL Native |
 | Database | SQLite with FTS5 via `react-native-sqlite-storage` |
 | Navigation | React Navigation (bottom tabs) |
 | Voice input | `@react-native-voice/voice` |
 | Voice output | `react-native-tts` |
-| Search | Fuse.js (fuzzy matching) |
-| Walking routes | Valhalla (offline tiles) |
+| Search | Fuse.js (fuzzy matching) + SQLite FTS5 |
+| Walking routes | Valhalla (offline tiles, native integration pending) |
+
+## Current Status
+
+- **4 screens complete and verified on the iPhone 16 Pro simulator (iOS 18.5)**: GO, LOST?, Maps, Settings
+- **Gemma inference verified on device (iPhone 12 Pro Max, iOS 26.3.1)**: three test queries produced valid structured JSON; intents `route`, `poi_lookup`, and destination-only routing all work. Wall-clock per query: 3–26 s on A14 Bionic CPU.
+- **Real London data end-to-end**: Heathrow T5 → Canary Wharf returns a 14-stop Elizabeth line path; Stratford → Wimbledon returns a 19-stop cross-London route; Waterloo → Baker Street returns a 5-station Jubilee path.
+- **Known runtime bug**: `react-native-sqlite-storage` hangs silently when opening the deployed `pois.db` / `location_aliases.db` from the iOS Documents container, so the UI currently falls back to fixture POIs. Tube routing is unaffected because the graph is a JSON asset loaded by Metro. See [NEXT_STEPS.md](NEXT_STEPS.md) for the fix plan.
+- **72/72 tests pass**, TypeScript compiles clean, both platform bundles succeed.
+
+See [NEXT_STEPS.md](NEXT_STEPS.md) for the full roadmap and prioritised next tasks.
 
 ## License
 
