@@ -1,0 +1,14 @@
+[out:json][timeout:120];
+(
+  // Tourist attractions, museums, viewpoints
+  node["tourism"~"museum|attraction|gallery|viewpoint|theme_park|zoo|aquarium|monument"](51.28,-0.51,51.69,0.33);
+  // Historic landmarks
+  node["historic"~"castle|memorial|monument|palace|ruins|cathedral"](51.28,-0.51,51.69,0.33);
+  // Major theatres + cinemas
+  node["amenity"~"theatre|arts_centre|cinema"](51.28,-0.51,51.69,0.33);
+  // Parks and gardens (as nodes where possible)
+  node["leisure"~"park|garden"](51.28,-0.51,51.69,0.33);
+  // Iconic landmarks by name
+  node["name"~"Eye|Tower|Bridge|Palace"](51.48,-0.18,51.56,0.01);
+);
+out center tags;
