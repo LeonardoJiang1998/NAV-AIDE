@@ -169,17 +169,55 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
 
         setAssetStatus(assets);
         setRuntimeState(runtimeProbe);
-        setModelStatus(runtimeProbe.probe?.model ?? {
+        const resolvedModelStatus = runtimeProbe.probe?.model ?? {
             loaded: false,
             modelPath: assets.resolvedPaths.model.resolvedPath,
-            backend: 'llama.rn',
+            backend: 'llama.rn' as const,
             failureReason: 'Runtime probe unavailable',
-        });
+        };
+        setModelStatus(resolvedModelStatus);
         setVoiceCapabilities(voice);
         setPermissions((current) => ({
             gps: voice.locationPermission === 'unknown' ? current.gps : voice.locationPermission === 'granted',
             microphone: voice.microphonePermission === 'unknown' ? current.microphone : voice.microphonePermission === 'granted',
         }));
+
+        // DEV: expose pipeline on globalThis so it can be driven from the remote debugger.
+        // Set globalThis.__NAVAIDE_AUTO_PROBE = true (or start with the env var) to run test
+        // queries on mount for end-to-end inference validation.
+        if (__DEV__ && resolvedModelStatus.loaded) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (globalThis as any).__NAVAIDE_PIPELINE = mobilePipeline;
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const autoProbe = Boolean((globalThis as any).__NAVAIDE_AUTO_PROBE);
+            if (autoProbe) {
+                const testQueries = [
+                    'How do I get from Waterloo to Baker Street?',
+                    'Take me to Waterloo',
+                    'Find the British Museum',
+                ];
+                for (const text of testQueries) {
+                    try {
+                        const start = Date.now();
+                        const result = await mobilePipeline.queryPipeline.execute(text, mobilePipeline.knownStations);
+                        const elapsed = Date.now() - start;
+                        console.log('[DEV-PROBE]', JSON.stringify({
+                            query: text,
+                            elapsedMs: elapsed,
+                            status: result.status,
+                            intent: result.extraction?.intent,
+                            origin: result.extraction?.origin,
+                            destination: result.extraction?.destination,
+                            poiQuery: result.extraction?.poiQuery,
+                            rendered: result.rendered?.text,
+                        }));
+                    } catch (error) {
+                        console.log('[DEV-PROBE] Query FAILED:', text, '->', error instanceof Error ? error.message : String(error));
+                    }
+                }
+            }
+        }
     };
 
     const requestDemoPermissions = async () => {
