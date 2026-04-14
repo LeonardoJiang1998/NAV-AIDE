@@ -6,6 +6,8 @@
     "scripts": {
         "android": "react-native run-android",
         "ios": "react-native run-ios",
+        "ios:release": "react-native run-ios --mode Release",
+        "ios:device-release": "react-native run-ios --mode Release --udid",
         "start": "react-native start",
         "bundle:android": "react-native bundle --entry-file index.js --platform android --dev false --bundle-output .artifacts/index.android.bundle --assets-dest .artifacts/android",
         "bundle:ios": "react-native bundle --entry-file index.js --platform ios --dev false --bundle-output .artifacts/main.jsbundle --assets-dest .artifacts",

@@ -159,27 +159,81 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
     }, [assetStatus, modelStatus, runtimeState, voiceCapabilities]);
 
     const refreshSystemState = async () => {
+        console.log('[DEV-PROBE] refreshSystemState: enter, __DEV__=', __DEV__);
+        // Expose pipeline immediately in DEV so the remote debugger can drive it
+        // even if the runtime probe hangs on asset loading.
+        if (__DEV__) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (globalThis as any).__NAVAIDE_PIPELINE = mobilePipeline;
+            console.log('[DEV-PROBE] pipeline exposed on globalThis.__NAVAIDE_PIPELINE');
+        }
+
         const assetManager = new AssetManager();
 
         const [assets, runtimeProbe, voice] = await Promise.all([
             assetManager.getStatus(),
-            mobilePipeline.initializeRuntime().catch(() => mobilePipeline.runtimeState),
+            mobilePipeline.initializeRuntime().catch((e) => {
+                console.log('[DEV-PROBE] initializeRuntime FAILED:', e instanceof Error ? e.message : String(e));
+                return mobilePipeline.runtimeState;
+            }),
             voiceServices.getCapabilities(),
         ]);
+        console.log('[DEV-PROBE] after Promise.all, probe=', runtimeProbe.probe ? 'present' : 'null');
 
         setAssetStatus(assets);
         setRuntimeState(runtimeProbe);
-        setModelStatus(runtimeProbe.probe?.model ?? {
+        const resolvedModelStatus = runtimeProbe.probe?.model ?? {
             loaded: false,
             modelPath: assets.resolvedPaths.model.resolvedPath,
-            backend: 'llama.rn',
+            backend: 'llama.rn' as const,
             failureReason: 'Runtime probe unavailable',
-        });
+        };
+        setModelStatus(resolvedModelStatus);
         setVoiceCapabilities(voice);
         setPermissions((current) => ({
             gps: voice.locationPermission === 'unknown' ? current.gps : voice.locationPermission === 'granted',
             microphone: voice.microphonePermission === 'unknown' ? current.microphone : voice.microphonePermission === 'granted',
         }));
+
+        // DEV: expose pipeline on globalThis so it can be driven from the remote debugger.
+        // Set globalThis.__NAVAIDE_AUTO_PROBE = true (or start with the env var) to run test
+        // queries on mount for end-to-end inference validation.
+        if (__DEV__) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (globalThis as any).__NAVAIDE_PIPELINE = mobilePipeline;
+            console.log('[DEV-PROBE] pipeline exposed; modelLoaded=', resolvedModelStatus.loaded, 'probe=', runtimeProbe.probe ? 'present' : 'null');
+        }
+        if (__DEV__ && resolvedModelStatus.loaded) {
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const autoProbe = Boolean((globalThis as any).__NAVAIDE_AUTO_PROBE);
+            if (autoProbe) {
+                const testQueries = [
+                    'How do I get from Waterloo to Baker Street?',
+                    'Take me to Waterloo',
+                    'Find the British Museum',
+                ];
+                for (const text of testQueries) {
+                    try {
+                        const start = Date.now();
+                        const result = await mobilePipeline.queryPipeline.execute(text, mobilePipeline.knownStations);
+                        const elapsed = Date.now() - start;
+                        console.log('[DEV-PROBE]', JSON.stringify({
+                            query: text,
+                            elapsedMs: elapsed,
+                            status: result.status,
+                            intent: result.extraction?.intent,
+                            origin: result.extraction?.origin,
+                            destination: result.extraction?.destination,
+                            poiQuery: result.extraction?.poiQuery,
+                            rendered: result.rendered?.text,
+                        }));
+                    } catch (error) {
+                        console.log('[DEV-PROBE] Query FAILED:', text, '->', error instanceof Error ? error.message : String(error));
+                    }
+                }
+            }
+        }
     };
 
     const requestDemoPermissions = async () => {

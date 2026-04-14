@@ -16,8 +16,11 @@ export class LlamaBackedStructuredIntentAdapter implements StructuredIntentModel
         }
 
         const context = await this.manager.getContext(model.resolvedPath);
+        // Use messages format so llama.rn applies Gemma's chat template
+        // (<start_of_turn>user\n...<end_of_turn>\n<start_of_turn>model\n).
+        // This improves instruction-following for structured JSON output.
         const result = await context.completion({
-            prompt: request.prompt,
+            messages: [{ role: 'user', content: request.prompt }],
             n_predict: 256,
             temperature: 0.1,
             response_format: {
@@ -43,11 +46,15 @@ export class LlamaBackedRenderAdapter implements NaturalLanguageRenderAdapter {
         }
 
         const context = await this.manager.getContext(model.resolvedPath);
+        // Use messages format so llama.rn applies Gemma's chat template.
         const result = await context.completion({
-            prompt: [
-                request.prompt,
-                'Return JSON with keys: text, referencedPlaceNames.',
-            ].join('\n'),
+            messages: [{
+                role: 'user',
+                content: [
+                    request.prompt,
+                    'Return JSON with keys: text, referencedPlaceNames.',
+                ].join('\n'),
+            }],
             n_predict: 256,
             temperature: 0.2,
             response_format: {

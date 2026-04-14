@@ -38,10 +38,16 @@ test('loadEntityRecordsFromSqlite returns local entity records with aliases', ()
     ensureAssembledDatabases();
 
     const records = loadEntityRecordsFromSqlite(aliasesDbPath);
-    const kingsCross = records.find((record) => record.canonicalName === "King's Cross St Pancras");
+    // The canonical name for the combined King's Cross / St Pancras station
+    // comes from the TfL Line Sequence API (currently "King's Cross & St Pancras
+    // International"). We accept any variant that mentions both, since TfL
+    // sometimes changes the canonical string.
+    const kingsCross = records.find((record) =>
+        /King'?s\s+Cross/i.test(record.canonicalName) && /St\s*Pancras/i.test(record.canonicalName),
+    );
 
     assert.ok(records.length > 0);
-    assert.ok(kingsCross);
+    assert.ok(kingsCross, 'expected a King\'s Cross / St Pancras entity record');
     assert.ok(kingsCross.aliases.includes('St Pancras'));
     assert.ok(kingsCross.aliases.includes('Kings Cross'));
 });

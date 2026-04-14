@@ -40,8 +40,13 @@ export class VoiceServices {
                 || await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION)
             ) ? 'granted' : 'denied';
         } else {
-            validationMode = 'scaffold';
-            notes.push('iOS permission state is scaffolded from Info.plist declarations; validate microphone and location prompts on a physical device.');
+            // iOS handles microphone/speech permissions at point of use:
+            // Voice.start() triggers the system prompt if not yet granted.
+            // Info.plist declares NSMicrophoneUsageDescription and NSSpeechRecognitionUsageDescription.
+            // Default to 'granted' so the STT guard passes and Voice.start() can handle the prompt.
+            // If the user denies, onSpeechError fires and the UI surfaces the error.
+            microphonePermission = stt ? 'granted' : 'denied';
+            notes.push('iOS microphone permission derived from STT availability; system prompts at point of use.');
         }
 
         return {
