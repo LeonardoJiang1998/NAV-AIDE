@@ -1,7 +1,6 @@
 import type { ManifestCheckResult } from './ManifestChecker';
-import { assetManifest } from './assetManifest';
-import { ReactNativeOfflineAssetLoader, type RuntimeAssetPathReport } from '../runtime/ReactNativeOfflineAssetLoader';
-import RNFS from 'react-native-fs';
+import { assetManifest, type OfflineAssetManifestEntry } from './assetManifest';
+import type { RuntimeAssetPathReport } from '../runtime/ReactNativeOfflineAssetLoader';
 
 export interface AssetStatus {
     ready: boolean;
@@ -9,16 +8,28 @@ export interface AssetStatus {
     resolvedPaths: RuntimeAssetPathReport;
 }
 
+export interface AssetLoaderLike {
+    getAssetPathReport(): Promise<RuntimeAssetPathReport>;
+}
+
+export interface HashingFileSystemLike {
+    hash(path: string, algorithm: string): Promise<string>;
+}
+
 export class AssetManager {
-    private readonly loader = new ReactNativeOfflineAssetLoader();
+    public constructor(
+        private readonly loader: AssetLoaderLike,
+        private readonly fileSystem: HashingFileSystemLike,
+        private readonly manifest: OfflineAssetManifestEntry[] = assetManifest,
+    ) { }
 
     public async getStatus(): Promise<AssetStatus> {
         const resolvedPaths = await this.loader.getAssetPathReport();
-        const checks = await Promise.all(assetManifest.map(async (entry) => {
+        const checks = await Promise.all(this.manifest.map(async (entry) => {
             const resolution = this.findResolution(entry.key, resolvedPaths);
             const exists = resolution?.exists ?? false;
             const checksumMatches = exists && resolution
-                ? (await RNFS.hash(resolution.resolvedPath, 'sha256')) === entry.checksum
+                ? (await this.fileSystem.hash(resolution.resolvedPath, 'sha256')) === entry.checksum
                 : Boolean(entry.optional);
 
             return {
@@ -29,7 +40,7 @@ export class AssetManager {
         }));
 
         return {
-            ready: checks.every((check) => check.exists || check.key === 'disruption-cache'),
+            ready: isManifestReady(this.manifest, checks),
             checks,
             resolvedPaths,
         };
@@ -53,4 +64,20 @@ export class AssetManager {
                 return null;
         }
     }
+}
+
+export function isManifestReady(
+    manifest: OfflineAssetManifestEntry[],
+    checks: ManifestCheckResult[],
+): boolean {
+    const checksByKey = new Map(checks.map((check) => [check.key, check]));
+
+    return manifest.every((entry) => {
+        if (entry.optional) {
+            return true;
+        }
+
+        const check = checksByKey.get(entry.key);
+        return Boolean(check?.exists && check.checksumMatches);
+    });
 }

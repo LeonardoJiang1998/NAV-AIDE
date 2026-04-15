@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
+import RNFS from 'react-native-fs';
 
 import { AssetManager, type AssetStatus } from '../assets/AssetManager';
 import type { LocalModelStatus } from '../model/LocalModelManager';
 import { createMobilePipeline, type MobilePipeline, type MobilePipelineRuntimeState } from '../pipeline/createMobilePipeline';
 import { sampleDestinations } from '../pipeline/mobileFixtures';
+import { ReactNativeOfflineAssetLoader } from '../runtime/ReactNativeOfflineAssetLoader';
+import { deriveAssetDiagnostics, deriveDemoReadiness, type AssetDiagnostics, type DeviceDemoReadiness } from './readiness';
 import { createPersistentStorage, type PersistentStorage } from '../storage/PersistentStorage';
 import { VoiceServices, type VoiceRuntimeStatus } from '../voice/VoiceServices';
 
@@ -23,22 +26,6 @@ export interface PreferencesState {
 export interface PermissionsState {
     gps: boolean;
     microphone: boolean;
-}
-
-export interface AssetDiagnostics {
-    availableCount: number;
-    missingCount: number;
-    checksumMismatchCount: number;
-    cacheState: 'offline-with-cache' | 'offline-without-cache';
-}
-
-export interface DeviceDemoReadiness {
-    mode: 'real-asset-mode' | 'fixture-fallback-mode';
-    readyForInternalDemo: boolean;
-    deviceBacked: string[];
-    fallback: string[];
-    blockers: string[];
-    warnings: string[];
 }
 
 interface AppShellContextValue {
@@ -77,86 +64,12 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
     const [permissions, setPermissions] = useState<PermissionsState>({ gps: false, microphone: false });
     const [feedbackQueue, setFeedbackQueue] = useState<FeedbackEntry[]>([]);
     const [stagedDestination, setStagedDestination] = useState<string | null>(null);
-    const assetDiagnostics = useMemo<AssetDiagnostics>(() => {
-        const checks = assetStatus?.checks ?? [];
-        const availableCount = checks.filter((check) => check.exists).length;
-        const missingCount = checks.filter((check) => !check.exists).length;
-        const checksumMismatchCount = checks.filter((check) => check.exists && !check.checksumMatches).length;
+    const assetDiagnostics = useMemo<AssetDiagnostics>(() => deriveAssetDiagnostics(assetStatus), [assetStatus]);
 
-        return {
-            availableCount,
-            missingCount,
-            checksumMismatchCount,
-            cacheState: availableCount > 0 ? 'offline-with-cache' : 'offline-without-cache',
-        };
-    }, [assetStatus]);
-
-    const demoReadiness = useMemo<DeviceDemoReadiness>(() => {
-        const deviceBacked: string[] = [];
-        const fallback: string[] = [];
-        const blockers: string[] = [];
-        const warnings: string[] = [];
-
-        if (modelStatus?.loaded) {
-            deviceBacked.push('llama.rn loaded the local GGUF model');
-        } else {
-            fallback.push('Model runtime is not loaded; shell will rely on rule-based fallback adapters.');
-            blockers.push('Local GGUF model is not validated on device.');
-        }
-
-        if (runtimeState.source === 'sqlite-runtime') {
-            deviceBacked.push('Entity resolution and POI lookup are using device-visible SQLite assets.');
-        } else {
-            fallback.push('Entity resolution and POI lookup are still using fixture fallback data.');
-            blockers.push('SQLite runtime mode is not active.');
-        }
-
-        if (assetStatus?.resolvedPaths.mapMbtiles.exists) {
-            deviceBacked.push('MBTiles asset is present for offline map rendering.');
-        } else {
-            fallback.push('Map tab is running without a device-visible MBTiles asset.');
-            blockers.push('MBTiles asset is missing from device search paths.');
-        }
-
-        if (assetStatus?.resolvedPaths.walkingRouting.exists) {
-            deviceBacked.push('Valhalla walking tiles are present.');
-        } else {
-            fallback.push('Walking asset path is unresolved.');
-            blockers.push('Valhalla walking tiles are missing from device search paths.');
-        }
-
-        if (voiceCapabilities?.stt) {
-            deviceBacked.push('OS STT runtime is available.');
-        } else {
-            blockers.push('OS STT runtime is unavailable.');
-        }
-
-        if (voiceCapabilities?.tts) {
-            deviceBacked.push('OS TTS runtime is available.');
-        } else {
-            blockers.push('OS TTS runtime is unavailable.');
-        }
-
-        if (voiceCapabilities?.microphonePermission === 'denied') {
-            blockers.push('Microphone permission is denied on device.');
-        }
-
-        if (voiceCapabilities?.locationPermission === 'denied') {
-            warnings.push('Location permission is denied; GPS-backed states remain limited.');
-        }
-
-        warnings.push(...(runtimeState.reasons ?? []));
-        warnings.push(...(voiceCapabilities?.notes ?? []));
-
-        return {
-            mode: blockers.length === 0 ? 'real-asset-mode' : 'fixture-fallback-mode',
-            readyForInternalDemo: blockers.length === 0,
-            deviceBacked,
-            fallback,
-            blockers,
-            warnings: [...new Set(warnings)],
-        };
-    }, [assetStatus, modelStatus, runtimeState, voiceCapabilities]);
+    const demoReadiness = useMemo<DeviceDemoReadiness>(
+        () => deriveDemoReadiness({ assetStatus, modelStatus, runtimeState, voiceCapabilities }),
+        [assetStatus, modelStatus, runtimeState, voiceCapabilities]
+    );
 
     const refreshSystemState = async () => {
         console.log('[DEV-PROBE] refreshSystemState: enter, __DEV__=', __DEV__);
@@ -168,7 +81,7 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
             console.log('[DEV-PROBE] pipeline exposed on globalThis.__NAVAIDE_PIPELINE');
         }
 
-        const assetManager = new AssetManager();
+        const assetManager = new AssetManager(new ReactNativeOfflineAssetLoader(), RNFS);
 
         const [assets, runtimeProbe, voice] = await Promise.all([
             assetManager.getStatus(),

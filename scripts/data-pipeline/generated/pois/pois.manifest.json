@@ -2,7 +2,7 @@
   "targetDatabase": "pois.db",
   "schemaPath": "scripts/data-pipeline/generated/pois/pois.schema.sql",
   "seedPath": "scripts/data-pipeline/generated/pois/pois.seed.sql",
-  "seedCount": 860,
+  "seedCount": 122,
   "artifactPath": "assets/data/pois.db",
   "assemblyCommand": "npm run stage2:assemble",
   "assemblyHint": "Run the SQLite assembly step to create a local fixture-based pois.db artifact with FTS tables."
