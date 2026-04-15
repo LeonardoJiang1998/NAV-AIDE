@@ -53,6 +53,12 @@ export class RuleBasedStructuredModelClient implements StructuredIntentModelAdap
 
         if (/(nearest|closest|اقرب|最近|plus proche)/.test(normalized)) {
             intent = 'nearest_station';
+        } else if (/\bwhere('?s|\s+is)\b|\bhow\s+do\s+i\s+find\b|\blocate\b/.test(normalized)) {
+            // "Where is X?" and "Where's X?" — treat as nearest_station lookup.
+            // If the station isn't in the known set, the pipeline will flag it
+            // as unresolved, which is safer than guessing a route.
+            intent = 'nearest_station';
+            destination = stationMatches[0] ?? null;
         } else if (/(lost|perdido|perdu|迷路|تائه)/.test(normalized)) {
             intent = 'lost_help';
             origin = stationMatches[0] ?? null;

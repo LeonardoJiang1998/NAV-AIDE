@@ -59,7 +59,7 @@ function mapPipelineError(error: unknown): FlowAlert {
 }
 
 export function GoScreen(): React.JSX.Element {
-    const { assetStatus, assetDiagnostics, demoReadiness, modelStatus, permissions, preferences, runtimeState, voiceCapabilities, stagedDestination, clearStagedDestination, enqueueFeedback, mobilePipeline } = useAppShell();
+    const { assetStatus, assetDiagnostics, demoReadiness, modelStatus, permissions, preferences, runtimeState, voiceCapabilities, stagedDestination, clearStagedDestination, enqueueFeedback, mobilePipeline, setLastRoute } = useAppShell();
     const [query, setQuery] = useState('How do I get from Waterloo to Baker Street?');
     const [transportMode, setTransportMode] = useState('Tube');
     const [resultText, setResultText] = useState<string | null>(null);
@@ -138,6 +138,17 @@ export function GoScreen(): React.JSX.Element {
 
             if (runtimeState.source === 'fixture-fallback') {
                 setFlowAlert({ label: 'fixture fallback active', detail: runtimeState.reasons.join(' '), tone: 'warn' });
+            }
+
+            // Share the resolved route with the Maps tab so the tube map can
+            // draw it as a highlighted path.
+            if (pipelineResult.route && pipelineResult.origin?.bestCandidate && pipelineResult.destination?.bestCandidate) {
+                setLastRoute({
+                    path: pipelineResult.route.path,
+                    originName: pipelineResult.origin.bestCandidate.entity.canonicalName,
+                    destinationName: pipelineResult.destination.bestCandidate.entity.canonicalName,
+                    cost: pipelineResult.route.cost,
+                });
             }
 
             clearStagedDestination();

@@ -12,7 +12,7 @@ import { colors } from '../theme';
 import { shellStyles } from './shared';
 
 export function MapsScreen(): React.JSX.Element {
-    const { assetStatus, demoReadiness, deviceInfo, runtimeState, stagedDestination, stageDestination } = useAppShell();
+    const { assetStatus, demoReadiness, deviceInfo, runtimeState, stagedDestination, stageDestination, lastRoute } = useAppShell();
     const [showTube, setShowTube] = useState(true);
     const [showBus, setShowBus] = useState(true);
     const [showWalking, setShowWalking] = useState(false);
@@ -29,11 +29,17 @@ export function MapsScreen(): React.JSX.Element {
             <SystemAlertsCard />
             <SectionCard>
                 <TubeLineMap
+                    highlightedRoute={lastRoute?.path}
                     onStationPress={(name) => {
                         setSelectedDestination(name);
                         stageDestination(name);
                     }}
                 />
+                {lastRoute ? (
+                    <Text style={shellStyles.copy}>
+                        Last route: {lastRoute.originName} → {lastRoute.destinationName} ({lastRoute.cost} min).
+                    </Text>
+                ) : null}
                 <Text style={shellStyles.copy}>
                     Tap a station to stage it for GO. Interchange stations are drawn with a larger white dot.
                 </Text>

@@ -33,6 +33,13 @@ export interface PermissionsState {
     microphone: boolean;
 }
 
+export interface LastRoute {
+    path: string[];
+    originName: string;
+    destinationName: string;
+    cost: number;
+}
+
 interface AppShellContextValue {
     assetStatus: AssetStatus | null;
     assetDiagnostics: AssetDiagnostics;
@@ -45,6 +52,7 @@ interface AppShellContextValue {
     feedbackQueue: FeedbackEntry[];
     deviceInfo: { platform: string; sampleDestinations: string[] };
     stagedDestination: string | null;
+    lastRoute: LastRoute | null;
     mobilePipeline: MobilePipeline;
     refreshSystemState(): Promise<void>;
     requestDemoPermissions(): Promise<void>;
@@ -53,6 +61,7 @@ interface AppShellContextValue {
     enqueueFeedback(entry: Omit<FeedbackEntry, 'id'>): void;
     stageDestination(destination: string): void;
     clearStagedDestination(): void;
+    setLastRoute(route: LastRoute | null): void;
 }
 
 const AppShellContext = createContext<AppShellContextValue | null>(null);
@@ -69,6 +78,7 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
     const [permissions, setPermissions] = useState<PermissionsState>({ gps: false, microphone: false });
     const [feedbackQueue, setFeedbackQueue] = useState<FeedbackEntry[]>([]);
     const [stagedDestination, setStagedDestination] = useState<string | null>(null);
+    const [lastRoute, setLastRoute] = useState<LastRoute | null>(null);
 
     const assetDiagnostics = useMemo<AssetDiagnostics>(
         () => deriveAssetDiagnostics(assetStatus),
@@ -203,6 +213,7 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
             sampleDestinations,
         },
         stagedDestination,
+        lastRoute,
         mobilePipeline,
         refreshSystemState,
         requestDemoPermissions,
@@ -232,6 +243,9 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
         },
         clearStagedDestination() {
             setStagedDestination(null);
+        },
+        setLastRoute(route) {
+            setLastRoute(route);
         },
     };
 

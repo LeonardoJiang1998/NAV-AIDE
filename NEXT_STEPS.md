@@ -2,179 +2,138 @@
 
 ## Current State Summary
 
-The app runs on-device with real London data and real LLM inference:
+**Live in the app on simulator:** end-to-end on-device intent extraction, routing on a 435-station TfL graph, SQLite-backed POI search over 860 London attractions, rich multi-line journey narratives, a real tube line map painted in official TfL colours, and a draggable OSM city map.
 
-- **4 screens complete** — GO, LOST?, Maps, Settings render with live diagnostics
-- **Real data** — 435 TfL Underground / DLR / Elizabeth / Overground stations, 575 edges, 860 OSM POIs, 478 location aliases
-- **Real LLM** — Gemma 3 1B IT Q4_K_M (769 MB) loads via `llama.rn` and produces valid structured JSON intent + rendered responses
-- **Verified on device** — iPhone 12 Pro Max (iOS 26.3.1) runs full query pipeline end-to-end in 6–26 s per query
-- **72/72 tests pass**, TypeScript compiles clean, both platform bundles succeed
+Verified on iPhone 16 Pro simulator (iOS 18.5, Gemma 3 1B IT Q4_K_M via `llama.rn` 0.5.11):
 
-See [`project_phase2_complete.md`](../.claude/projects/-Users-yoda-Desktop-NAV-AIDE/memory/project_phase2_complete.md) for the phase history.
-
----
+- **Heathrow T5 → Canary Wharf** → "Start at Canary Wharf. Take the Elizabeth line 13 stops to Heathrow Terminals 2 & 3. Change to the Piccadilly line and ride 1 stop to Heathrow Terminal 5. Total travel time: 28 minutes." *(28 s, origin/destination flip now auto-corrected)*
+- **Stratford → Wimbledon** → 3-segment cross-London route with Central + Elizabeth + District interchanges spelled out *(38 min, 20 s inference)*
+- **Waterloo → Baker Street** → "Take the Jubilee line 4 stops from Waterloo to Baker Street. Stops on the way: Westminster, Green Park, Bond Street. Total travel time: 8 minutes." *(8 min, 24 s inference)*
+- **Find the British Museum** → POI lookup ✓
+- **Remote control CLI**: `npm run ask "your query"` drives the running app from the terminal.
 
 ## What's Done ✓
 
-### Phase 1 — Test Coverage Expansion
-- DisruptionService test type error fixed
-- Golden tests cover multi-leg routes, disambiguation, and hallucination checks
-- Unit coverage across Dijkstra, EntityResolver, asset loaders, model bridge
+### Phase 1 — Test Coverage
+- 89+ tests across unit, golden, and integration suites
+- New coverage: `RouteNarrative.test.ts`, `IntentOrderCorrector.test.ts`, `AssetManager.test.ts`, `readiness.test.ts`
 
 ### Phase 2 — Production Data Pipeline
-- **Tube graph**: 35 fixture stations → **435 real stations**, 110 edges → **575 edges**. Source: TfL Line Sequence API (11 tube lines + DLR + Elizabeth line + 6 Overground branches). Resolves TfL HUB IDs vs stop-point IDs via `stopPointSequences[].stopPoint`.
-- **Location aliases**: ~50 rows → **478 rows**. Regenerated from the live tube graph so the alias index always matches deployed stations. Handles `&` / `and`, `Street` / `St`, apostrophe variants.
-- **POIs**: 3 fixture POIs → **860 real POIs** (museum 117, gallery 225, landmark 306, theatre 97, arts_centre 53, viewpoint 39, park 16, zoo 4, aquarium 2, attraction 1). Source: OSM Overpass API.
-- **Pipeline scripts**: `build-tube-graph-from-tfl.js` and `build-pois-from-osm.js` committed alongside raw source snapshots in `scripts/data-pipeline/tfl-source/`, so the pipeline is fully reproducible offline.
+- Tube graph: 435 stations / 575 edges from TfL Line Sequence API (11 tube + DLR + Elizabeth + 6 Overground)
+- Location aliases: 478 rows regenerated from the live tube graph
+- POIs: 860 rows from OSM Overpass API across 10 categories
+- Bus routes: 29 tourist routes (22 day + 7 night) from codex PR #5
+- Raw source snapshots committed in `scripts/data-pipeline/tfl-source/` for reproducibility
 
-### Phase 4 (partial) — Gemma model integration
-- Gemma 3 1B IT Q4_K_M GGUF (769 MB) deployed and verified on both simulator and physical device
-- Gemma 4 E2B Q4_K_M (3.2 GB) downloaded and saved, but **`llama.rn` 0.5.11 only supports `gemma` / `gemma2` / `gemma3` architectures** — Gemma 4 requires `llama.rn` 0.12.0-rc.8 or newer
-- Adapter code switched from raw `prompt` to `messages: [{ role, content }]` format so `llama.rn` applies the Gemma chat template automatically
-- Release-build scripts (`ios:release`, `ios:device-release`) added for airplane-mode testing with embedded JS bundle
+### Phase 4.1 — Gemma model integration
+- Gemma 3 1B IT Q4_K_M (769 MB) deployed and verified
+- Gemma 4 E2B Q4_K_M (3.2 GB) saved but blocked on `llama.rn` 0.12 (supports only through `gemma3`)
+- Adapter uses `messages` array format to apply Gemma chat template
 
-### Phase 5 (partial) — Real-Device Validation
-- iPhone 12 Pro Max (iOS 26.3.1) end-to-end verified:
-  - "How do I get from Waterloo to Baker Street?" → 25.8 s, intent/origin/destination correct, rendered 8-min Jubilee route
-  - "Find the British Museum" → 3.4 s, `poi_lookup` intent + rendered response
-  - "Take me to Waterloo" → 7.5 s, destination-only route (rule-based bridge could not parse this)
-  - `llama.rn` model loads from `Documents/models/gemma4-e2b.gguf`
-  - Certificate trust flow documented
-- iOS microphone permission guard fixed in `VoiceServices.ts` — was blocking the voice-search button on device because iOS permission state stayed `'unknown'`
-- DEV-only remote-probe harness: pipeline exposed on `globalThis.__NAVAIDE_PIPELINE` via the Metro debugger, runs queries without UI interaction (used to get around macOS focus-management issues during automation)
+### Phase 5 (partial) — Device Validation
+- iPhone 12 Pro Max (iOS 26.3.1) verified — inference runs, 6–26 s per query
+- STT permission guard fixed
+- Remote debugger harness + `globalThis.__NAVAIDE_PIPELINE` exposure for CLI-driven testing
 
----
+### UI & UX polish (this session)
+- **Rich journey narrative** — multi-line routes naming specific TfL lines and interchanges
+- **Tube line map** (`TubeLineMap.tsx`) — MapLibre renders the 435-station network in official TfL colours with interchange dots and a legend
+- **London city map** — OSM raster tiles wired into the offline style; the Maps screen now shows real streets
+- **Route highlight** — running a query on GO draws the resolved path on the tube line map via `AppShellContext.setLastRoute`
+- **Line chips** (`LineChip.tsx`) — Pantone-matched pills for every TfL line
+- **Station autocomplete** (`StationSuggestions.tsx`) — inline typeahead over all 435 station names
+- **Quick examples** — preset natural-language queries on the GO screen
+- **Origin/destination corrector** — Gemma 3 1B flips origin and destination surprisingly often; `IntentOrderCorrector.ts` now cross-checks the raw query and flips back when the word order contradicts the extraction
+- **"Where is X?" handling** — rule-based bridge now maps that phrasing to `nearest_station`
+- **Remote control CLI** — `npm run ask "your query"` pipes queries to the running app via Metro's debugger
 
-## Known Issues (next session)
-
-### ⚠ SQLite runtime silent hang on iOS (high priority)
-When the app tries to open the deployed `Documents/data/pois.db` and `Documents/data/location_aliases.db`, `react-native-sqlite-storage` hangs without throwing. As a result the app falls back to the bundled fixture entities / POIs even though the database files exist at the expected paths.
-
-Impact:
-- Routing still works (tube graph is a JSON asset, imported into the JS bundle).
-- POI lookup is limited to the fixture until this is fixed — "Find the British Museum" matches because the string is in the fallback fixture, but the other 859 POIs are unreachable from the UI.
-
-Suspected cause: `SQLite.openDatabase({ name: absolutePath, location: 'default', readOnly: true })` in `src/app/storage/ReactNativeSQLiteAdapter.ts` combines an absolute path with `location: 'default'`, which the library may not expect. Try either:
-1. Drop `location: 'default'` and pass just the absolute path, or
-2. Switch to `location: 'Documents'` + the relative path `data/pois.db` (matching how the library usually resolves Documents-container paths on iOS).
-
-### ⚠ `initializeRuntime()` occasionally hangs on device
-Seen on iPhone 12 Pro Max — `mobilePipeline.initializeRuntime()` never resolves on some launches, which means `AppShellContext.refreshSystemState` stays in the initial state. Likely caused by the same SQLite adapter issue above (the probe awaits `sqliteAdapter.validateAsset` when the files exist, and that never returns). Fixing the SQLite adapter should unblock this.
-
-### Gemma 3 1B sometimes flips origin/destination
-Observed on real-data queries: "Waterloo to Baker Street" occasionally extracted as `origin=Baker Street, destination=Waterloo`. The route itself is correct but reversed. A 4B model (or Gemma 4 E2B once `llama.rn` updates) should resolve this — the 1B model is at the edge of what structured JSON extraction needs.
-
-### Unknown-intent fallback
-"Where is Hampstead?" currently returns `intent: "unknown"`. The rule-based bridge doesn't map "where is X" to `nearest_station`, and Gemma 3 1B doesn't either. Either add a "where is …" regex rule in the rule bridge or tune the Gemma prompt.
+### Core bug fixes
+- **`react-native-sqlite-storage` silent hang** (previous priority #1) — fix landed. We now rewrite absolute paths into Documents-relative paths and pass them via `createFromLocation` + `readOnly: true`, which is the library's supported pre-populated-DB API. **860 POIs + 435 aliases now reach the UI.**
+- `AssetManager` requires checksum validation for required assets; optional disruption cache stays non-blocking
+- `deriveDemoReadiness` / `deriveAssetDiagnostics` extracted as pure, unit-tested helpers in `readiness.ts`
+- Invalid MBTiles / Valhalla tiles now correctly report as fallback blockers
 
 ---
 
-## Phase 3 — Walking Route Implementation (still open)
+## Known Issues
 
-`ValhallaBridge` returns the `asset-unavailable` stub. Remaining work as previously planned:
+### "Where is X?" is still `intent: unknown` on Gemma 3 1B
+Rule-based bridge handles it (falls through to `nearest_station`), but the first-choice LLM returns `unknown` for this phrasing. A bigger model or a prompt tweak would fix it.
 
-### 3.1 Evaluate Valhalla native module options
-- Assess `valhalla-napi` or a custom C++ bridge for React Native
-- Determine GGUF tile size requirements for Central London walking graph
-- Decide: full native Valhalla binding vs. simplified A* on OSM extract
+### Gemma 3 1B can miss multi-word station names
+"Heathrow Terminal 5" is correctly extracted, but some of the longer names (e.g. "King's Cross & St Pancras International") occasionally get truncated. The EntityResolver's alias index often recovers the right canonical name anyway.
 
-### 3.2 Implement native walking router
-- Build or integrate the chosen native module, wire into `ValhallaBridge`
-- Provide real distance, duration, and step-by-step walking instructions
+### Walking directions still stubbed
+`AssetAwareWalkingRouter` returns `asset-unavailable` until Valhalla tiles are wired up (Phase 3).
 
-### 3.3 Generate and bundle walking tiles
-- Extract Central London walking graph from OSM data
-- Package as offline Valhalla tiles and add to the asset manifest + download flow
+### MBTiles asset not yet bundled
+The city map uses OSM raster tiles at runtime. For airplane-mode use we still need the MBTiles pipeline (Phase 4.2).
 
 ---
 
-## Phase 4 — Asset Packaging (partial)
+## Remaining Phases
 
-### 4.1 Gemma model ✓ (Gemma 3 1B deployed; Gemma 4 E2B pending `llama.rn` upgrade)
-- Once `llama.rn` 0.12+ stabilises, swap in Gemma 4 E2B Q4_K_M (`~/Desktop/NAV-AIDE-assets/models/gemma4-e2b.gguf`).
-- Risk: 0.12 went through 9 RCs — test in a worktree before promoting.
+### Phase 3 — Walking Route Implementation
+Unchanged from before. Valhalla native module evaluation, walking tile extraction from OSM, integration into `ValhallaBridge`.
 
-### 4.2 Offline map tiles
-- Generate Greater London MBTiles from OSM PBF using `tilemaker` or similar, zooms 8–18
-- Place at `Documents/maps/london.mbtiles` on device
-- Validate MapLibre rendering on both platforms
+### Phase 4.2 — Offline map tiles (MBTiles)
+Generate Greater London MBTiles from OSM PBF (tilemaker or similar), zooms 8–18, deploy to `Documents/maps/london.mbtiles`.
 
-### 4.3 Asset download flow validation
-- Test `DownloadService` end-to-end with real asset sizes
-- Validate checksum verification, retry logic, progress reporting, interrupted/resumed downloads
-- Update `assetManifest.ts` with real SHA-256 checksums (currently `awaiting-asset-*` placeholders)
+### Phase 4.3 — Asset download flow validation
+End-to-end test with real asset sizes, checksum verification, resumable downloads.
 
-### 4.4 App bundle size audit
-- Measure total with bundled fixtures vs. downloaded assets
-- Targets: <100 MB initial install, <2 GB with all downloaded assets
+### Phase 5.1 (remaining) — iOS physical device
+- STT end-to-end in multiple languages
+- TTS output validation
+- GPS location services (needs `@react-native-community/geolocation`)
+- Offline map rendering from MBTiles (blocked on 4.2)
+- Airplane-mode release build verification
 
----
+### Phase 5.2 — Android physical device testing
+Not started.
 
-## Phase 5 — Real-Device Validation (remaining)
+### Phase 6 — CI/CD hardening
+Pre-commit hooks, bundle-size regression checks, release automation.
 
-### 5.1 iOS physical device (partial — inference verified, rest pending)
-- ✅ `llama.rn` model load from Documents container
-- ⏳ Microphone permissions on device (guard fixed, end-to-end STT not retested)
-- ⏳ `react-native-voice` STT in multiple languages
-- ⏳ `react-native-tts` output validation
-- ⏳ GPS location services (no geolocation package installed yet — `@react-native-community/geolocation` required)
-- ⏳ Offline map rendering from MBTiles (depends on 4.2)
-- ⏳ Full GO-screen UI query flow (depends on SQLite fix above so the UI doesn't stall on `initializeRuntime`)
+### Phase 7 — Launch prep
+Real device screenshots, privacy policy, App Store metadata.
 
-### 5.2 Android physical device testing
-All bullets as originally planned — Android not touched this session.
-
-### 5.3 Offline resilience testing
-- Release build (`npm run ios:release`) bundles the JS, enabling airplane-mode testing. Not yet run end-to-end on device.
-- Verify graceful degradation when specific assets are missing
-- Confirm `fixture-fallback-mode` vs `real-asset-mode` reporting is accurate
-
-### 5.4 Performance benchmarking
-- Measured on iPhone 12 Pro Max (CPU-only, A14 Bionic):
-  - Route query (Waterloo → Baker Street): **25.8 s** including 1B model prefill
-  - POI lookup: **3.4 s**
-  - Model load: ~10 s on first query, warm thereafter
-- Pending: Dijkstra-only time on full 435-station graph, SQLite FTS query time (after the adapter fix), target-tracking against <2 s route / <500 ms POI goals
+### Future: Gemma 4 E2B
+Already downloaded at `~/Desktop/NAV-AIDE-assets/models/gemma4-e2b.gguf` (3.2 GB). Swap in once `llama.rn` 0.12 stabilises — this should also fix the origin/destination flip at the source and improve the `unknown`-intent fallbacks.
 
 ---
 
-## Phase 6 — CI/CD (existing workflow)
-
-GitHub Actions is already wired up for build + test + data-pipeline verification (see commit `846e15a`). Future additions:
-- Pre-commit hooks (TypeScript type checking, ESLint)
-- Release automation (Fastlane, TestFlight / Play Internal)
-- Bundle-size regression checks
-
----
-
-## Phase 7 — Docs Site and Launch Prep
-
-Unchanged from the original plan — still pending. Real device screenshots, privacy policy, waitlist backend, App Store prep.
-
----
-
-## Recommended Priority Order (updated)
+## Recommended Priority (updated)
 
 | Priority | Item | Rationale |
 |---|---|---|
-| 1 | **Fix SQLite runtime hang** (`ReactNativeSQLiteAdapter.ts`) | Unblocks 859 POIs in the UI and stops `initializeRuntime` stalls. Small change, big impact. |
-| 2 | **Gemma 4 E2B upgrade** (when `llama.rn` 0.12 stabilises) | Fixes origin/destination flipping; "Effective 2B" at ~3 GB is our declared target. |
-| 3 | **Add `@react-native-community/geolocation`** | Currently no iOS location permission prompt — "GPS permission" toggle in Settings is purely cosmetic. Required for underground-safe last-known-location behaviour. |
-| 4 | **Phase 4.2 — offline map tiles** | Makes the Maps screen actually useful; unlocks end-to-end demo. |
-| 5 | **Phase 3 — walking routes** | Needed to complete the "mixed" transport mode. |
-| 6 | **Phase 5.2 — Android validation** | Widen the platform coverage before launch. |
-| 7 | **Phase 6 — CI hardening** | Pre-commit + release automation. |
-| 8 | **Phase 7 — launch prep** | Screenshots, privacy policy, App Store metadata. |
+| 1 | **Phase 4.2 — offline MBTiles** | Only missing piece for a true airplane-mode demo of the Maps screen. |
+| 2 | **Phase 3 — Valhalla walking** | Needed for "Mixed" transport mode and the last step of most journeys. |
+| 3 | **Gemma 4 E2B upgrade** | Needs `llama.rn` 0.12 stable. Cleaner solution than the post-processing corrector. |
+| 4 | **Phase 5.2 — Android validation** | Widen platform coverage before launch. |
+| 5 | **Phase 5.1 remainder** | STT end-to-end, GPS, airplane-mode release build. |
+| 6 | **Phase 6 — CI hardening** | Pre-commit, release automation. |
+| 7 | **Phase 7 — launch prep** | Screenshots, privacy policy, store metadata. |
+
+---
+
+## Remote Control
+
+```bash
+# Run a query through the app from your terminal
+npm run ask -- "How do I get from Waterloo to Baker Street?"
+
+# Target a specific device
+npm run ask -- --device "iPhone 16 Pro" "Heathrow Terminal 5 to Canary Wharf"
+
+# Raw JSON output (good for scripting)
+npm run ask -- --json "Find the British Museum"
+```
+
+Prerequisites: Metro running (`npm start`) and the app running in `__DEV__` (which exposes `globalThis.__NAVAIDE_PIPELINE`). To run the built-in auto-probe battery of test queries on next app launch, set `globalThis.__NAVAIDE_AUTO_PROBE = true` via the debugger.
 
 ---
 
 ## Out of Scope (v2+)
 
-Unchanged — per `.github/instructions/mobile.instructions.md`:
-
-- User accounts / login
-- Cloud AI APIs
-- Camera OCR features
-- Santander Cycles routing (dock locations only in MVP)
-- Journey history
-- LiteRT-LM integration
+Unchanged — per `.github/instructions/mobile.instructions.md`: user accounts, cloud AI APIs, camera OCR, Santander Cycles routing, journey history, LiteRT-LM.
