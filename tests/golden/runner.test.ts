@@ -40,6 +40,16 @@ const graph = {
     ],
 };
 
+// Real TfL coordinates for the golden test graph so the walking router can
+// return actual Haversine estimates instead of `asset-unavailable`.
+const stationCoordinates = new Map<string, { lat: number; lon: number }>([
+    ['Waterloo', { lat: 51.5032, lon: -0.1115 }],
+    ['Westminster', { lat: 51.501, lon: -0.1254 }],
+    ['Green Park', { lat: 51.5068, lon: -0.1427 }],
+    ['Baker Street', { lat: 51.5226, lon: -0.1571 }],
+    ['Canary Wharf', { lat: 51.5032, lon: -0.0194 }],
+]);
+
 class StubIntentClient implements StructuredIntentModelAdapter {
     public async generateStructured<T>(request: { prompt: string }): Promise<T> {
         const rawQueryLine = request.prompt.split('\n').find((line) => line.startsWith('User query: '));
@@ -91,6 +101,7 @@ function createPipeline() {
                 { id: 'station-green-park', summary: 'Lift maintenance at Green Park', affectedPlaceNames: ['Green Park'], updatedAt: '2026-04-11T09:10:00.000Z' },
             ],
             walkingAssetsAvailable: true,
+            stationCoordinates,
             now: () => 0,
         }
     );

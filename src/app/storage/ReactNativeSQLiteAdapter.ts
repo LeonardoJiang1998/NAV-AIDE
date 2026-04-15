@@ -45,6 +45,13 @@ function trimTrailingSlash(path: string): string {
     return path.endsWith('/') ? path.slice(0, -1) : path;
 }
 
+function toNumber(value: unknown): number | null {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
 export class ReactNativeSQLiteAdapter {
     public async validateAsset(contract: SqliteAssetContract, absolutePath: string): Promise<SqliteValidationResult> {
         const database = await this.openDatabase(absolutePath);
@@ -113,17 +120,28 @@ ORDER BY canonical_name, normalized_alias;
 
         try {
             const rows = await this.queryRows(database, `
-SELECT id, canonical_name, category
+SELECT id, canonical_name, category, latitude, longitude, zone, nearest_station, search_terms
 FROM pois
 ORDER BY canonical_name;
 `);
 
-            return rows.map((row) => ({
-                id: String(row.id ?? ''),
-                canonicalName: String(row.canonical_name ?? ''),
-                category: String(row.category ?? 'unknown'),
-                aliases: [],
-            } satisfies POIRecord));
+            return rows.map((row) => {
+                const searchTerms = String(row.search_terms ?? '').split(/\s+/).filter(Boolean);
+                const lat = toNumber(row.latitude);
+                const lon = toNumber(row.longitude);
+                const zone = toNumber(row.zone);
+                const nearestStation = row.nearest_station ? String(row.nearest_station) : undefined;
+                return {
+                    id: String(row.id ?? ''),
+                    canonicalName: String(row.canonical_name ?? ''),
+                    category: String(row.category ?? 'unknown'),
+                    aliases: searchTerms.filter((term) => term !== String(row.canonical_name)),
+                    latitude: lat ?? undefined,
+                    longitude: lon ?? undefined,
+                    zone: zone ?? undefined,
+                    nearestStation,
+                } satisfies POIRecord;
+            });
         } finally {
             await database.close();
         }

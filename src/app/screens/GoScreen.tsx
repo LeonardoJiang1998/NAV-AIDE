@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Tts from 'react-native-tts';
 
+import { CollapsibleCard } from '../components/CollapsibleCard';
 import { RouteCard } from '../components/RouteCard';
 import { SectionCard } from '../components/SectionCard';
 import { StationSuggestions } from '../components/StationSuggestions';
@@ -13,20 +14,42 @@ import { colors } from '../theme';
 import { useSpeechToText } from '../voice/useSpeechToText';
 import { shellStyles } from './shared';
 
-const transportModes = ['Tube', 'Walk', 'Mixed'];
-
 const QUICK_QUERIES = [
-    'How do I get from Waterloo to Baker Street?',
-    'Heathrow Terminal 5 to Canary Wharf',
+    'Waterloo to Baker Street',
+    'Heathrow T5 to Canary Wharf',
+    'Take me to the British Museum',
     'Stratford to Wimbledon',
-    'Find the British Museum',
-    "Where's Hampstead?",
+    "Where is Hampstead?",
 ];
+
+interface FlowAlert {
+    label: string;
+    detail: string;
+    tone: 'neutral' | 'good' | 'warn' | 'bad';
+}
+
+function mapPipelineError(error: unknown): FlowAlert {
+    const message = error instanceof Error ? error.message : 'Unknown pipeline failure.';
+    if (/hallucinated/i.test(message)) {
+        return {
+            label: 'hallucinated locations',
+            detail: 'The model referenced a place not in our local index, so the response was rejected. Try the exact station name.',
+            tone: 'bad',
+        };
+    }
+    if (/json|parse/i.test(message)) {
+        return {
+            label: 'invalid JSON from LLM',
+            detail: 'The model returned malformed JSON. This is usually transient; try again.',
+            tone: 'bad',
+        };
+    }
+    return { label: 'query error', detail: message, tone: 'bad' };
+}
 
 /**
  * When the user taps a suggested station, update the query in-place so the
- * natural-language prompt stays grammatical. We replace the text after the
- * last "to" / "from" clause, or append to the end if neither is present.
+ * natural-language prompt stays grammatical.
  */
 function rewriteQueryWithStation(query: string, station: string): string {
     const trimmed = query.trim();
@@ -38,30 +61,23 @@ function rewriteQueryWithStation(query: string, station: string): string {
     return `${trimmed}${/\s$/.test(trimmed) ? '' : ' '}${station}`;
 }
 
-interface FlowAlert {
-    label: string;
-    detail: string;
-    tone: 'neutral' | 'good' | 'warn' | 'bad';
-}
-
-function mapPipelineError(error: unknown): FlowAlert {
-    const message = error instanceof Error ? error.message : 'Unknown pipeline failure.';
-
-    if (/hallucinated/i.test(message)) {
-        return { label: 'hallucinated locations', detail: 'Rendered output referenced a place that is not in the allowed local place set, so the response was rejected.', tone: 'bad' };
-    }
-
-    if (/json|parse/i.test(message)) {
-        return { label: 'invalid JSON from LLM', detail: 'Structured normalization returned invalid JSON, so the shell stopped instead of guessing.', tone: 'bad' };
-    }
-
-    return { label: 'query error', detail: message, tone: 'bad' };
-}
-
 export function GoScreen(): React.JSX.Element {
-    const { assetStatus, assetDiagnostics, demoReadiness, modelStatus, permissions, preferences, runtimeState, voiceCapabilities, stagedDestination, clearStagedDestination, enqueueFeedback, mobilePipeline, setLastRoute } = useAppShell();
-    const [query, setQuery] = useState('How do I get from Waterloo to Baker Street?');
-    const [transportMode, setTransportMode] = useState('Tube');
+    const {
+        demoReadiness,
+        modelStatus,
+        permissions,
+        preferences,
+        runtimeState,
+        voiceCapabilities,
+        stagedDestination,
+        clearStagedDestination,
+        enqueueFeedback,
+        mobilePipeline,
+        setLastRoute,
+    } = useAppShell();
+
+    const [query, setQuery] = useState('Waterloo to Baker Street');
+    const [isLoading, setIsLoading] = useState(false);
     const [resultText, setResultText] = useState<string | null>(null);
     const [result, setResult] = useState<Awaited<ReturnType<typeof mobilePipeline.queryPipeline.execute>> | null>(null);
     const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
@@ -69,80 +85,70 @@ export function GoScreen(): React.JSX.Element {
     const stt = useSpeechToText();
 
     useEffect(() => {
-        if (stt.transcript) {
-            setQuery(stt.transcript);
-        }
+        if (stt.transcript) setQuery(stt.transcript);
     }, [stt.transcript]);
 
     useEffect(() => {
-        if (stt.error) {
-            setFlowAlert({ label: 'speech error', detail: stt.error, tone: 'bad' });
-        }
+        if (stt.error) setFlowAlert({ label: 'speech error', detail: stt.error, tone: 'bad' });
     }, [stt.error]);
-
-    const toggleVoiceSearch = async () => {
-        if (!voiceCapabilities?.stt || !permissions.microphone) {
-            setFlowAlert({ label: 'stt unavailable', detail: 'OS speech input requires microphone permission and STT capability. Check Settings.', tone: 'bad' });
-            return;
-        }
-
-        if (stt.isListening) {
-            await stt.stop();
-        } else {
-            await stt.start();
-        }
-    };
-
-    const statusTone = useMemo(() => {
-        if (!assetStatus?.ready) {
-            return { label: 'assets pending', tone: 'warn' as const };
-        }
-        if (!permissions.gps) {
-            return { label: 'last known location', tone: 'warn' as const };
-        }
-        return { label: 'blue dot ready', tone: 'good' as const };
-    }, [assetStatus?.ready, permissions.gps]);
 
     useEffect(() => {
         if (stagedDestination) {
             setQuery(`Take me to ${stagedDestination}`);
-            setFlowAlert({ label: 'navigate-here staged', detail: `${stagedDestination} was sent from Maps and is ready to route from GO.`, tone: 'good' });
         }
     }, [stagedDestination]);
 
+    const headerChip = useMemo(() => {
+        if (!demoReadiness.readyForInternalDemo) {
+            return { label: 'fallback mode', tone: 'warn' as const };
+        }
+        if (!modelStatus?.loaded) {
+            return { label: 'rule-based', tone: 'warn' as const };
+        }
+        return { label: 'ready', tone: 'good' as const };
+    }, [demoReadiness.readyForInternalDemo, modelStatus?.loaded]);
+
+    const toggleVoiceSearch = async () => {
+        if (!voiceCapabilities?.stt || !permissions.microphone) {
+            setFlowAlert({
+                label: 'voice input unavailable',
+                detail: 'Voice search needs microphone permission. You can grant it from iOS Settings > NavAideShell.',
+                tone: 'bad',
+            });
+            return;
+        }
+        if (stt.isListening) await stt.stop();
+        else await stt.start();
+    };
+
     const runQuery = async () => {
         setFlowAlert(null);
-
-        if (demoReadiness.blockers.length > 0 && runtimeState.source === 'fixture-fallback') {
-            setFlowAlert({
-                label: 'fallback demo mode',
-                detail: `Routing can still run, but this demo is not fully device-backed. ${demoReadiness.blockers[0]}`,
-                tone: 'warn',
-            });
-        }
-
+        setIsLoading(true);
         try {
             const pipelineResult = await mobilePipeline.queryPipeline.execute(query, mobilePipeline.knownStations);
             setResult(pipelineResult);
             setResultText(pipelineResult.rendered?.text ?? null);
 
             if (pipelineResult.status === 'needs_disambiguation') {
-                setFlowAlert({ label: 'disambiguation required', detail: 'The local resolver found more than one likely place match, so routing stopped instead of guessing.', tone: 'warn' });
-                return;
+                setFlowAlert({
+                    label: 'pick a station',
+                    detail: 'More than one place matched — pick from the candidates below.',
+                    tone: 'warn',
+                });
+            } else if (pipelineResult.status === 'unresolved') {
+                setFlowAlert({
+                    label: 'no route found',
+                    detail:
+                        'We could not find a tube route for this query. Try "<station> to <station>" or ask about a tourist landmark like "Take me to the British Museum".',
+                    tone: 'bad',
+                });
             }
 
-            if (pipelineResult.status === 'unresolved') {
-                setFlowAlert({ label: 'no route found', detail: 'The shell could not produce a valid offline route for this request.', tone: 'bad' });
-                return;
-            }
-
-            if (runtimeState.source === 'fixture-fallback') {
-                setFlowAlert({ label: 'fixture fallback active', detail: runtimeState.reasons.join(' '), tone: 'warn' });
-            }
-
-            // Share the resolved route with the Maps tab so the tube map can
-            // draw it as a highlighted path.
-            if (pipelineResult.route && pipelineResult.origin?.bestCandidate && pipelineResult.destination?.bestCandidate) {
+            if (
+                pipelineResult.route &&
+                pipelineResult.origin?.bestCandidate &&
+                pipelineResult.destination?.bestCandidate
+            ) {
                 setLastRoute({
                     path: pipelineResult.route.path,
                     originName: pipelineResult.origin.bestCandidate.entity.canonicalName,
@@ -154,25 +160,32 @@ export function GoScreen(): React.JSX.Element {
             clearStagedDestination();
         } catch (error) {
             setFlowAlert(mapPipelineError(error));
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const playVoice = async () => {
         if (!preferences.voiceEnabled) {
-            setFlowAlert({ label: 'voice guidance disabled', detail: 'Enable voice guidance in Settings before requesting spoken route playback.', tone: 'warn' });
+            setFlowAlert({
+                label: 'voice guidance off',
+                detail: 'Enable voice guidance in Settings to hear spoken directions.',
+                tone: 'warn',
+            });
             return;
         }
-
         if (!voiceCapabilities?.tts) {
-            setFlowAlert({ label: 'tts unavailable', detail: 'OS TTS is not available in the current shell state, so spoken playback cannot start.', tone: 'bad' });
+            setFlowAlert({
+                label: 'tts unavailable',
+                detail: 'OS text-to-speech is not available on this device.',
+                tone: 'bad',
+            });
             return;
         }
-
         if (!resultText) {
-            setFlowAlert({ label: 'no route to speak', detail: 'Run a successful route search before asking for TTS playback.', tone: 'warn' });
+            setFlowAlert({ label: 'run a search first', detail: 'Run a search before playing spoken directions.', tone: 'warn' });
             return;
         }
-
         try {
             await Tts.speak(resultText);
         } catch (error) {
@@ -182,166 +195,169 @@ export function GoScreen(): React.JSX.Element {
 
     const submitFeedback = (rating: 'up' | 'down') => {
         setFeedback(rating);
-        enqueueFeedback({
-            routeLabel: resultText ?? query,
-            rating,
-            note: `${transportMode} route feedback`,
-        });
+        enqueueFeedback({ routeLabel: resultText ?? query, rating, note: 'route feedback' });
     };
 
     return (
-        <ScrollView contentContainerStyle={shellStyles.screen}>
-            <Text style={shellStyles.title}>GO</Text>
-            <Text style={shellStyles.copy}>Plan a journey with text or voice hooks, inspect route output, and send post-journey feedback into the offline queue.</Text>
-            <SystemAlertsCard />
-            {stagedDestination ? (
-                <SectionCard>
-                    <View style={styles.rowBetween}>
-                        <Text style={styles.sectionTitle}>Navigate-here handoff</Text>
-                        <StatusChip label="ready from Maps" tone="good" />
-                    </View>
-                    <Text style={shellStyles.copy}>{stagedDestination} is staged from Maps and will be used in the next route request.</Text>
-                    <Pressable onPress={clearStagedDestination} style={styles.secondaryButton}>
-                        <Text style={styles.secondaryButtonText}>Clear staged destination</Text>
-                    </Pressable>
-                </SectionCard>
-            ) : null}
-            <SectionCard>
-                <View style={styles.rowBetween}>
-                    <Text style={styles.sectionTitle}>Live map status</Text>
-                    <StatusChip label={statusTone.label} tone={statusTone.tone} />
+        <ScrollView contentContainerStyle={shellStyles.screen} keyboardShouldPersistTaps="handled">
+            {/* Hero header */}
+            <View style={styles.hero}>
+                <View style={styles.heroHeader}>
+                    <Text style={shellStyles.title}>GO</Text>
+                    <StatusChip label={headerChip.label} tone={headerChip.tone} />
                 </View>
-                <View style={styles.blueDotCard}>
-                    <View style={styles.blueDot} />
-                    <Text style={shellStyles.copy}>{permissions.gps ? 'Blue dot is ready for surface navigation.' : 'GPS permission is off, so the shell is using an underground-safe last known location state.'}</Text>
-                </View>
-                <Text style={shellStyles.copy}>{assetDiagnostics.cacheState === 'offline-with-cache' ? 'Offline with cache is available for degraded guidance.' : 'Offline without cache means route search must wait for successful downloads.'}</Text>
-                <Text style={shellStyles.copy}>{modelStatus?.loaded ? 'Native model path is loaded.' : 'Model loading remains pending, so this shell may fall back to fixture-safe adapters.'}</Text>
-                <Text style={shellStyles.copy}>Pipeline source: {runtimeState.source}. Entities: {runtimeState.entitySource}. POIs: {runtimeState.poiSource}.</Text>
-                <Text style={shellStyles.copy}>Demo readiness: {demoReadiness.readyForInternalDemo ? 'device-backed' : 'fallback-visible'}.</Text>
-            </SectionCard>
-            <SectionCard>
-                <Text style={styles.sectionTitle}>Plan a journey</Text>
-                <Text style={shellStyles.copy}>
-                    Ask in natural language, tap a suggested station, or pick a common route. Everything runs on-device.
+                <Text style={[shellStyles.copy, styles.heroCopy]}>
+                    Ask where you want to go. Everything runs on-device.
                 </Text>
+            </View>
+
+            {/* Search hero */}
+            <SectionCard style={styles.searchCard}>
                 <TextInput
                     value={query}
                     onChangeText={setQuery}
                     style={styles.input}
-                    placeholder="e.g. How do I get from Waterloo to Baker Street?"
+                    placeholder="e.g. Waterloo to Baker Street"
                     placeholderTextColor="#7c8a85"
                     multiline
+                    accessibilityLabel="Journey query"
+                    returnKeyType="search"
                 />
+
                 <StationSuggestions
                     stations={mobilePipeline.knownStations}
                     query={query}
-                    onPick={(station) => {
-                        setQuery((current) => rewriteQueryWithStation(current, station));
-                    }}
+                    onPick={(station) => setQuery((current) => rewriteQueryWithStation(current, station))}
                 />
-                <View style={styles.transportRow}>
-                    {transportModes.map((mode) => (
-                        <Pressable
-                            key={mode}
-                            onPress={() => setTransportMode(mode)}
-                            style={[styles.transportPill, transportMode === mode ? styles.transportPillActive : null]}
-                        >
-                            <Text style={transportMode === mode ? styles.transportTextActive : styles.transportText}>
-                                {mode}
-                            </Text>
-                        </Pressable>
-                    ))}
-                </View>
+
                 <View style={styles.buttonRow}>
-                    <Pressable onPress={() => void runQuery()} style={styles.primaryButton}>
-                        <Text style={styles.primaryButtonText}>Run search</Text>
+                    <Pressable
+                        onPress={() => void runQuery()}
+                        disabled={isLoading}
+                        style={[styles.primaryButton, isLoading ? styles.buttonDisabled : null]}
+                    >
+                        <Text style={styles.primaryButtonText}>{isLoading ? 'Routing…' : 'Search'}</Text>
                     </Pressable>
                     <Pressable
                         onPress={() => void toggleVoiceSearch()}
-                        style={stt.isListening ? styles.primaryButton : styles.secondaryButton}
+                        style={[styles.iconButton, stt.isListening ? styles.iconButtonActive : null]}
+                        accessibilityLabel={stt.isListening ? 'Stop voice input' : 'Voice input'}
                     >
-                        <Text style={stt.isListening ? styles.primaryButtonText : styles.secondaryButtonText}>
-                            {stt.isListening ? 'Stop listening' : 'Voice search'}
+                        <Text style={stt.isListening ? styles.iconButtonTextActive : styles.iconButtonText}>
+                            {stt.isListening ? '● Listening' : '🎤 Voice'}
                         </Text>
                     </Pressable>
-                    <Pressable onPress={() => void playVoice()} style={styles.secondaryButton}>
-                        <Text style={styles.secondaryButtonText}>Play TTS</Text>
-                    </Pressable>
+                    {resultText ? (
+                        <Pressable onPress={() => void playVoice()} style={styles.iconButton}>
+                            <Text style={styles.iconButtonText}>🔊 Speak</Text>
+                        </Pressable>
+                    ) : null}
                 </View>
-                {stt.isListening ? <Text style={shellStyles.copy}>Listening…</Text> : null}
-                {stt.partialTranscript ? <Text style={shellStyles.copy}>Hearing: {stt.partialTranscript}</Text> : null}
-                {!voiceCapabilities?.stt ? (
-                    <Text style={shellStyles.copy}>
-                        STT did not validate on this device check. Text entry remains the safe demo path.
-                    </Text>
+
+                {stt.partialTranscript ? (
+                    <Text style={styles.hearing}>Hearing: “{stt.partialTranscript}”</Text>
                 ) : null}
-                <View style={styles.quickActions}>
-                    <Text style={styles.quickHeader}>Quick examples</Text>
-                    <View style={styles.quickRow}>
-                        {QUICK_QUERIES.map((preset) => (
-                            <Pressable key={preset} onPress={() => setQuery(preset)} style={styles.quickPill}>
-                                <Text style={styles.quickPillText}>{preset}</Text>
-                            </Pressable>
-                        ))}
-                    </View>
-                </View>
             </SectionCard>
+
+            {/* Quick examples */}
+            <View style={styles.quickRow}>
+                {QUICK_QUERIES.map((preset) => (
+                    <Pressable key={preset} onPress={() => setQuery(preset)} style={styles.quickPill}>
+                        <Text style={styles.quickPillText}>{preset}</Text>
+                    </Pressable>
+                ))}
+            </View>
+
+            {/* Flow alert */}
             {flowAlert ? (
-                <SectionCard>
+                <SectionCard style={styles.alertCard}>
                     <StatusChip label={flowAlert.label} tone={flowAlert.tone} />
                     <Text style={shellStyles.copy}>{flowAlert.detail}</Text>
                 </SectionCard>
             ) : null}
+
+            {/* Disambiguation */}
             {result?.status === 'needs_disambiguation' ? (
                 <SectionCard>
-                    <Text style={styles.sectionTitle}>Disambiguation</Text>
+                    <Text style={styles.sectionTitle}>Did you mean…</Text>
                     {(result.origin?.candidates ?? result.destination?.candidates ?? []).map((candidate) => (
-                        <Text key={candidate.entity.id} style={shellStyles.copy}>Candidate: {candidate.entity.canonicalName}</Text>
+                        <Pressable
+                            key={candidate.entity.id}
+                            onPress={() => setQuery((q) => rewriteQueryWithStation(q, candidate.entity.canonicalName))}
+                            style={styles.disambiguationPill}
+                        >
+                            <Text style={styles.disambiguationText}>{candidate.entity.canonicalName}</Text>
+                        </Pressable>
                     ))}
                 </SectionCard>
             ) : null}
+
+            {/* Primary result */}
             {result ? <RouteCard result={result} /> : null}
+
+            {/* Feedback (only after a result) */}
             {result ? (
-                <SectionCard>
-                    <Text style={styles.sectionTitle}>Post-journey feedback</Text>
-                    <View style={styles.buttonRow}>
-                        <Pressable onPress={() => submitFeedback('up')} style={styles.secondaryButton}>
-                            <Text style={styles.secondaryButtonText}>Helpful</Text>
+                <SectionCard style={styles.feedbackCard}>
+                    <Text style={styles.feedbackTitle}>Was this helpful?</Text>
+                    <View style={styles.feedbackRow}>
+                        <Pressable
+                            onPress={() => submitFeedback('up')}
+                            style={[styles.feedbackButton, feedback === 'up' ? styles.feedbackButtonActive : null]}
+                        >
+                            <Text style={styles.feedbackText}>👍 Yes</Text>
                         </Pressable>
-                        <Pressable onPress={() => submitFeedback('down')} style={styles.secondaryButton}>
-                            <Text style={styles.secondaryButtonText}>Needs work</Text>
+                        <Pressable
+                            onPress={() => submitFeedback('down')}
+                            style={[styles.feedbackButton, feedback === 'down' ? styles.feedbackButtonActive : null]}
+                        >
+                            <Text style={styles.feedbackText}>👎 Not really</Text>
                         </Pressable>
                     </View>
-                    <Text style={shellStyles.copy}>{feedback ? `Queued ${feedback} feedback for offline upload.` : 'Feedback stays on device until later sync handling is added.'}</Text>
                 </SectionCard>
             ) : null}
-            <DownloadScreen />
+
+            {/* Diagnostics collapsed by default */}
+            <CollapsibleCard
+                title="Diagnostics"
+                subtitle={`Pipeline: ${runtimeState.source} · Entities: ${runtimeState.entityCount} · POIs: ${runtimeState.poiCount}`}
+            >
+                <Text style={shellStyles.copy}>
+                    Model: {modelStatus?.loaded ? 'loaded' : `pending (${modelStatus?.failureReason ?? 'unknown'})`}
+                </Text>
+                <Text style={shellStyles.copy}>
+                    Permissions — GPS: {permissions.gps ? 'granted' : 'off'}. Microphone:{' '}
+                    {permissions.microphone ? 'granted' : 'off'}.
+                </Text>
+                <Text style={shellStyles.copy}>Demo readiness: {demoReadiness.mode}</Text>
+                <SystemAlertsCard />
+            </CollapsibleCard>
+
+            <CollapsibleCard title="Offline downloads" subtitle="Manage bundled + downloaded assets">
+                <DownloadScreen />
+            </CollapsibleCard>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    rowBetween: {
+    hero: {
+        gap: 6,
+    },
+    heroHeader: {
         alignItems: 'center',
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
-    sectionTitle: {
-        color: colors.ink,
-        fontSize: 18,
-        fontWeight: '700',
+    heroCopy: {
+        color: colors.inkMuted,
     },
-    blueDotCard: {
-        alignItems: 'center',
-        flexDirection: 'row',
+    searchCard: {
         gap: 12,
     },
-    blueDot: {
-        backgroundColor: '#2583ff',
-        borderRadius: 999,
-        height: 16,
-        width: 16,
+    sectionTitle: {
+        color: colors.ink,
+        fontSize: 16,
+        fontWeight: '700',
     },
     input: {
         backgroundColor: '#fff',
@@ -349,83 +365,126 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         borderWidth: 1,
         color: colors.ink,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-    },
-    transportRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-    },
-    transportPill: {
-        backgroundColor: '#ece4d7',
-        borderRadius: 999,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-    },
-    transportPillActive: {
-        backgroundColor: colors.accent,
-    },
-    transportText: {
-        color: colors.ink,
-        fontWeight: '600',
-    },
-    transportTextActive: {
-        color: '#fffaf1',
-        fontWeight: '700',
+        fontSize: 16,
+        lineHeight: 22,
+        minHeight: 56,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
     },
     buttonRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
+        gap: 10,
     },
     primaryButton: {
         backgroundColor: colors.accent,
         borderRadius: 14,
+        flexGrow: 1,
+        minWidth: 120,
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    buttonDisabled: {
+        opacity: 0.6,
     },
     primaryButtonText: {
         color: '#fffaf1',
+        fontSize: 15,
         fontWeight: '700',
     },
-    secondaryButton: {
-        backgroundColor: '#ece4d7',
+    iconButton: {
+        backgroundColor: colors.paperSunken,
+        borderColor: colors.line,
+        borderWidth: 1,
         borderRadius: 14,
-        paddingHorizontal: 16,
+        paddingHorizontal: 14,
         paddingVertical: 12,
     },
-    secondaryButtonText: {
+    iconButtonActive: {
+        backgroundColor: colors.danger,
+        borderColor: colors.danger,
+    },
+    iconButtonText: {
         color: colors.ink,
+        fontSize: 14,
         fontWeight: '700',
     },
-    quickActions: {
-        gap: 6,
-        marginTop: 4,
-    },
-    quickHeader: {
-        color: '#4b5b57',
-        fontSize: 11,
+    iconButtonTextActive: {
+        color: '#fffaf1',
+        fontSize: 14,
         fontWeight: '700',
-        letterSpacing: 0.8,
-        textTransform: 'uppercase',
+    },
+    hearing: {
+        color: colors.inkMuted,
+        fontSize: 13,
+        fontStyle: 'italic',
     },
     quickRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 6,
+        gap: 8,
     },
     quickPill: {
-        backgroundColor: '#fffaf1',
+        backgroundColor: colors.paperRaised,
         borderColor: colors.line,
         borderWidth: 1,
         borderRadius: 999,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
     },
     quickPillText: {
         color: colors.ink,
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    alertCard: {
+        gap: 8,
+    },
+    disambiguationPill: {
+        alignSelf: 'flex-start',
+        backgroundColor: colors.paperSunken,
+        borderColor: colors.line,
+        borderWidth: 1,
+        borderRadius: 14,
+        marginTop: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+    },
+    disambiguationText: {
+        color: colors.ink,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    feedbackCard: {
+        gap: 8,
+    },
+    feedbackTitle: {
+        color: colors.inkMuted,
         fontSize: 12,
+        fontWeight: '700',
+        letterSpacing: 0.8,
+        textTransform: 'uppercase',
+    },
+    feedbackRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    feedbackButton: {
+        backgroundColor: colors.paperSunken,
+        borderColor: colors.line,
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+    },
+    feedbackButtonActive: {
+        backgroundColor: colors.accentSoft,
+        borderColor: colors.accent,
+    },
+    feedbackText: {
+        color: colors.ink,
+        fontSize: 13,
         fontWeight: '600',
     },
 });

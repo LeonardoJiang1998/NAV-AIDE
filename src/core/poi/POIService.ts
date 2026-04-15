@@ -5,6 +5,10 @@ export interface POIRecord {
     canonicalName: string;
     category: string;
     aliases: string[];
+    latitude?: number;
+    longitude?: number;
+    nearestStation?: string;
+    zone?: number;
 }
 
 export interface POIResult {

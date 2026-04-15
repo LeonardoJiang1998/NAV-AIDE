@@ -18,7 +18,7 @@ if (!Array.isArray(seeds) || seeds.length === 0) {
 
 fs.mkdirSync(outputDir, { recursive: true });
 
-const schemaSql = `-- Stage 2 scaffold for pois.db\nCREATE TABLE IF NOT EXISTS pois (\n  id TEXT PRIMARY KEY,\n  canonical_name TEXT NOT NULL,\n  category TEXT NOT NULL,\n  latitude REAL NOT NULL,\n  longitude REAL NOT NULL,\n  zone INTEGER,\n  search_terms TEXT NOT NULL\n);\n\nCREATE INDEX IF NOT EXISTS idx_pois_category ON pois(category);\nCREATE INDEX IF NOT EXISTS idx_pois_zone ON pois(zone);\n-- Future native assembly step: project search_terms into an SQLite FTS5 table without changing the Node-first schema contract.\n`;
+const schemaSql = `-- Stage 2 scaffold for pois.db\nCREATE TABLE IF NOT EXISTS pois (\n  id TEXT PRIMARY KEY,\n  canonical_name TEXT NOT NULL,\n  category TEXT NOT NULL,\n  latitude REAL NOT NULL,\n  longitude REAL NOT NULL,\n  zone INTEGER,\n  nearest_station TEXT,\n  search_terms TEXT NOT NULL\n);\n\nCREATE INDEX IF NOT EXISTS idx_pois_category ON pois(category);\nCREATE INDEX IF NOT EXISTS idx_pois_zone ON pois(zone);\nCREATE INDEX IF NOT EXISTS idx_pois_nearest_station ON pois(nearest_station);\n-- Future native assembly step: project search_terms into an SQLite FTS5 table without changing the Node-first schema contract.\n`;
 
 const seedValues = seeds.map((poi) => {
     const values = [
@@ -28,13 +28,14 @@ const seedValues = seeds.map((poi) => {
         poi.latitude,
         poi.longitude,
         poi.zone,
+        poi.nearestStation ?? null,
         poi.searchTerms.join(' '),
     ];
 
     return `  (${values.map(formatSqlValue).join(', ')})`;
 });
 
-const seedSql = `-- Stage 2 seed scaffold for pois.db\nINSERT INTO pois (id, canonical_name, category, latitude, longitude, zone, search_terms) VALUES\n${seedValues.join(',\n')};\n`;
+const seedSql = `-- Stage 2 seed scaffold for pois.db\nINSERT INTO pois (id, canonical_name, category, latitude, longitude, zone, nearest_station, search_terms) VALUES\n${seedValues.join(',\n')};\n`;
 
 const manifest = {
     targetDatabase: 'pois.db',

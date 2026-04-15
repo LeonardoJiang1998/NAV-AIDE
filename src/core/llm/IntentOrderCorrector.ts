@@ -37,6 +37,27 @@ export function correctOriginDestinationOrder(extraction: IntentExtraction): Int
         return extraction;
     }
 
+    // Special case: LLM returned only a destination but raw query looks like
+    // "X to Y" where X matches the returned destination. The real route is
+    // X → Y; Y is likely a POI or station the LLM didn't recognise. Move the
+    // tagged destination to origin and let downstream logic resolve the
+    // remainder as the real destination.
+    if (destination && !origin) {
+        const destLower = destination.toLowerCase();
+        const xToY = raw.match(/^(.+?)\s+to\s+(.+?)(?:[?.!]|$)/);
+        if (xToY) {
+            const before = xToY[1].trim();
+            const after = xToY[2].trim();
+            if (before.includes(destLower) && !after.includes(destLower)) {
+                return {
+                    ...extraction,
+                    origin: destination,
+                    destination: toTitleCase(after),
+                };
+            }
+        }
+    }
+
     if (!origin || !destination || origin === destination) return extraction;
 
     const originLower = origin.toLowerCase();
@@ -71,4 +92,8 @@ export function correctOriginDestinationOrder(extraction: IntentExtraction): Int
     }
 
     return extraction;
+}
+
+function toTitleCase(value: string): string {
+    return value.replace(/\b[a-z]/g, (ch) => ch.toUpperCase());
 }

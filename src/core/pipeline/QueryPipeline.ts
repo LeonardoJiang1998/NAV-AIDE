@@ -39,6 +39,17 @@ export interface QueryPipelineResult {
     rendered: RenderedResponse | null;
 }
 
+/**
+ * A resolved routing endpoint. `stationEntity` is always the tube station the
+ * routing graph uses; `poiName` is set when the user asked to go to a POI
+ * rather than a station, so the UI can show the POI label and append a
+ * walking leg from the station.
+ */
+interface RouteEndpoint {
+    stationEntity: EntityRecord;
+    poiName?: string;
+}
+
 export class QueryPipeline {
     public constructor(private readonly dependencies: QueryPipelineDependencies) { }
 
@@ -92,55 +103,85 @@ export class QueryPipeline {
     }
 
     private async handleRouteIntent(extraction: IntentExtraction, fastPathHints: string[]): Promise<QueryPipelineResult> {
-        const origin = extraction.origin ? this.dependencies.entityResolver.resolve(extraction.origin) : undefined;
-        const destination = extraction.destination ? this.dependencies.entityResolver.resolve(extraction.destination) : undefined;
+        const originResolved = this.resolveRouteEndpoint(extraction.origin);
+        const destinationResolved = this.resolveRouteEndpoint(extraction.destination);
 
         if (extraction.requiresDisambiguation) {
-            return { status: 'needs_disambiguation', extraction, fastPathHints, origin, destination, disruptions: [], rendered: null };
+            return {
+                status: 'needs_disambiguation',
+                extraction,
+                fastPathHints,
+                origin: originResolved.resolution,
+                destination: destinationResolved.resolution,
+                disruptions: [],
+                rendered: null,
+            };
         }
 
-        if (!origin?.bestCandidate || !destination?.bestCandidate) {
-            return { status: 'unresolved', extraction, fastPathHints, origin, destination, disruptions: [], rendered: null };
+        if (!originResolved.endpoint || !destinationResolved.endpoint) {
+            return {
+                status: 'unresolved',
+                extraction,
+                fastPathHints,
+                origin: originResolved.resolution,
+                destination: destinationResolved.resolution,
+                disruptions: [],
+                rendered: null,
+            };
         }
 
-        if (origin.status !== 'resolved' || destination.status !== 'resolved') {
-            return { status: 'needs_disambiguation', extraction, fastPathHints, origin, destination, disruptions: [], rendered: null };
+        if (
+            (originResolved.resolution && originResolved.resolution.status !== 'resolved') ||
+            (destinationResolved.resolution && destinationResolved.resolution.status !== 'resolved')
+        ) {
+            return {
+                status: 'needs_disambiguation',
+                extraction,
+                fastPathHints,
+                origin: originResolved.resolution,
+                destination: destinationResolved.resolution,
+                disruptions: [],
+                rendered: null,
+            };
         }
+
+        const originEndpoint = originResolved.endpoint;
+        const destinationEndpoint = destinationResolved.endpoint;
 
         const route = this.dependencies.router.findShortestPath(
             this.dependencies.graph,
-            origin.bestCandidate.entity.id,
-            destination.bestCandidate.entity.id
+            originEndpoint.stationEntity.id,
+            destinationEndpoint.stationEntity.id,
         );
 
         const tubeSegments = route ? buildTubeSegments(route.path, this.dependencies.graph) : [];
 
-        const walking = await this.dependencies.walkingRouter.route({
-            originName: origin.bestCandidate.entity.canonicalName,
-            destinationName: destination.bestCandidate.entity.canonicalName,
-        });
+        // Walking leg: from the final station to the POI (if destination is a
+        // POI), or the first POI to origin station if origin is a POI. This
+        // makes "Take me to the British Museum" a real mixed journey.
+        const walking = await this.resolveWalkingLeg(originEndpoint, destinationEndpoint);
 
         const allowedPlaceNames = this.collectAllowedPlaceNames([
-            origin.bestCandidate.entity,
-            destination.bestCandidate.entity,
+            originEndpoint.stationEntity,
+            destinationEndpoint.stationEntity,
             ...this.entitiesFromRoute(route),
         ]);
+        // Include POI-derived names so the hallucination guard allows them in
+        // the rendered response.
+        for (const extra of [originEndpoint.poiName, destinationEndpoint.poiName]) {
+            if (extra && !allowedPlaceNames.includes(extra)) allowedPlaceNames.push(extra);
+        }
 
         const disruptions = await this.dependencies.disruptionService.getDisruptions(allowedPlaceNames, {
-            key: `route:${origin.bestCandidate.entity.id}:${destination.bestCandidate.entity.id}`,
+            key: `route:${originEndpoint.stationEntity.id}:${destinationEndpoint.stationEntity.id}`,
             maxAgeMs: 5 * 60 * 1000,
         });
 
+        const summary = this.buildSummary(route, tubeSegments, originEndpoint, destinationEndpoint, walking);
+
         const rendered = await this.dependencies.responseRenderer.render({
             intent: extraction.intent,
-            summary: route
-                ? buildRouteNarrative(
-                      origin.bestCandidate.entity.canonicalName,
-                      destination.bestCandidate.entity.canonicalName,
-                      tubeSegments,
-                      route.cost,
-                  )
-                : `No tube route was found from ${origin.bestCandidate.entity.canonicalName} to ${destination.bestCandidate.entity.canonicalName}.`,
+            summary,
             allowedPlaceNames,
         });
 
@@ -148,14 +189,145 @@ export class QueryPipeline {
             status: route ? 'complete' : 'unresolved',
             extraction,
             fastPathHints,
-            origin,
-            destination,
+            origin: originResolved.resolution,
+            destination: destinationResolved.resolution,
             route,
             tubeSegments,
             walking,
             disruptions,
             rendered,
         };
+    }
+
+    /**
+     * Resolve a route endpoint (origin or destination) from a raw query
+     * fragment. Tries EntityResolver first (which knows stations), then falls
+     * back to POI lookup: if the fragment matches a known POI, we use the
+     * POI's nearest tube station as the routing endpoint and record the POI
+     * name + location so we can produce a walking leg and hallucination-safe
+     * rendered text.
+     */
+    private resolveRouteEndpoint(raw: string | null): {
+        resolution: ResolutionResult | undefined;
+        endpoint: RouteEndpoint | null;
+    } {
+        if (!raw) return { resolution: undefined, endpoint: null };
+
+        const resolution = this.dependencies.entityResolver.resolve(raw);
+
+        // Only accept a station entity here — POI entities don't exist on the
+        // tube graph and would make Dijkstra return null. For POIs we fall
+        // through to poiService.search, which gives us a nearestStation to
+        // route to and preserves the POI name for the walking leg.
+        if (
+            resolution.status === 'resolved' &&
+            resolution.bestCandidate &&
+            resolution.bestCandidate.entity.type === 'station'
+        ) {
+            return {
+                resolution,
+                endpoint: { stationEntity: resolution.bestCandidate.entity },
+            };
+        }
+
+        // Fall back to POI lookup. Strip leading articles ("the", "a", "an")
+        // so "the British Museum" matches "British Museum", and drop a
+        // trailing "station" suffix that sometimes appears in voice input.
+        const poiQuery = raw
+            .trim()
+            .replace(/^(the|a|an)\s+/i, '')
+            .replace(/\s+station$/i, '');
+
+        // Prefer an exact canonical POI match before falling back to fuzzy
+        // search. If the entity resolver already surfaced the POI by name,
+        // use its canonical name as the POI query so score is highest.
+        const poiByEntity =
+            resolution.bestCandidate?.entity.type === 'poi'
+                ? resolution.bestCandidate.entity.canonicalName
+                : null;
+        const poiResults = this.dependencies.poiService.search(poiByEntity ?? poiQuery, 1);
+
+        if (poiResults.length > 0) {
+            const poi = poiResults[0].poi;
+            const stationName = poi.nearestStation;
+            if (stationName) {
+                const stationResolution = this.dependencies.entityResolver.resolve(stationName);
+                if (stationResolution.bestCandidate) {
+                    return {
+                        resolution: stationResolution,
+                        endpoint: {
+                            stationEntity: stationResolution.bestCandidate.entity,
+                            poiName: poi.canonicalName,
+                        },
+                    };
+                }
+            }
+        }
+
+        return { resolution, endpoint: null };
+    }
+
+    private async resolveWalkingLeg(
+        origin: RouteEndpoint,
+        destination: RouteEndpoint,
+    ): Promise<WalkingRouteResult> {
+        // Walk to destination POI if one is attached. Otherwise walk
+        // station-to-station (useful as a sanity check for short hops).
+        const walkFrom = destination.poiName ? destination.stationEntity.canonicalName : origin.stationEntity.canonicalName;
+        const walkTo = destination.poiName
+            ? destination.poiName
+            : destination.stationEntity.canonicalName;
+
+        return this.dependencies.walkingRouter.route({
+            originName: walkFrom,
+            destinationName: walkTo,
+        });
+    }
+
+    private buildSummary(
+        route: ShortestPathResult | null,
+        tubeSegments: TubeSegment[],
+        originEndpoint: RouteEndpoint,
+        destinationEndpoint: RouteEndpoint,
+        walking: WalkingRouteResult,
+    ): string {
+        const originLabel = originEndpoint.poiName ?? originEndpoint.stationEntity.canonicalName;
+        const destLabel = destinationEndpoint.poiName ?? destinationEndpoint.stationEntity.canonicalName;
+
+        if (!route) {
+            return `No tube route was found from ${originLabel} to ${destLabel}.`;
+        }
+
+        const sameStation = originEndpoint.stationEntity.id === destinationEndpoint.stationEntity.id;
+
+        // Special case: user's origin and destination share a station, but the
+        // destination is a POI. Skip the "You're already here" narrative and
+        // only describe the walking leg.
+        if (sameStation && destinationEndpoint.poiName && walking.status === 'ok') {
+            return `${destinationEndpoint.stationEntity.canonicalName} is the nearest station to ${destinationEndpoint.poiName}. Walk approximately ${this.formatMeters(
+                walking.distanceMeters,
+            )} (~${walking.durationMinutes} min) from the station to ${destinationEndpoint.poiName}.`;
+        }
+
+        const tubeNarrative = buildRouteNarrative(
+            originEndpoint.stationEntity.canonicalName,
+            destinationEndpoint.stationEntity.canonicalName,
+            tubeSegments,
+            route.cost,
+        );
+
+        // If the destination is a POI, append the final walking leg.
+        if (destinationEndpoint.poiName && walking.status === 'ok') {
+            return `${tubeNarrative} Then walk approximately ${this.formatMeters(
+                walking.distanceMeters,
+            )} (~${walking.durationMinutes} min) from ${destinationEndpoint.stationEntity.canonicalName} to ${destinationEndpoint.poiName}.`;
+        }
+
+        return tubeNarrative;
+    }
+
+    private formatMeters(m: number): string {
+        return m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`;
     }
 
     private async handlePoiIntent(extraction: IntentExtraction, fastPathHints: string[]): Promise<QueryPipelineResult> {

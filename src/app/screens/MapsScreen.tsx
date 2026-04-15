@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { CollapsibleCard } from '../components/CollapsibleCard';
 import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
 import { SystemAlertsCard } from '../components/SystemAlertsCard';
@@ -14,9 +15,10 @@ import { shellStyles } from './shared';
 export function MapsScreen(): React.JSX.Element {
     const { assetStatus, demoReadiness, deviceInfo, runtimeState, stagedDestination, stageDestination, lastRoute } = useAppShell();
     const [showTube, setShowTube] = useState(true);
-    const [showBus, setShowBus] = useState(true);
+    const [showBus, setShowBus] = useState(false);
     const [showWalking, setShowWalking] = useState(false);
     const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
+    const [activeMap, setActiveMap] = useState<'tube' | 'city'>('tube');
 
     const selectedCoordinate = selectedDestination
         ? ([sampleDestinationPins[selectedDestination].longitude, sampleDestinationPins[selectedDestination].latitude] as [number, number])
@@ -24,121 +26,217 @@ export function MapsScreen(): React.JSX.Element {
 
     return (
         <ScrollView contentContainerStyle={shellStyles.screen}>
-            <Text style={shellStyles.title}>Maps</Text>
-            <Text style={shellStyles.copy}>Toggle map layers, inspect the offline surface, and stage a navigate-here destination for the GO flow.</Text>
-            <SystemAlertsCard />
-            <SectionCard>
-                <TubeLineMap
-                    highlightedRoute={lastRoute?.path}
-                    onStationPress={(name) => {
-                        setSelectedDestination(name);
-                        stageDestination(name);
-                    }}
-                />
-                {lastRoute ? (
-                    <Text style={shellStyles.copy}>
-                        Last route: {lastRoute.originName} → {lastRoute.destinationName} ({lastRoute.cost} min).
-                    </Text>
+            <View style={styles.heroHeader}>
+                <Text style={shellStyles.title}>Maps</Text>
+                {stagedDestination ? (
+                    <StatusChip label={`Staged: ${stagedDestination}`} tone="good" />
                 ) : null}
+            </View>
+            <Text style={[shellStyles.copy, styles.heroCopy]}>
+                Tube network map in TfL colours, plus an OSM city map. Tap any station to stage it for GO.
+            </Text>
+
+            {/* Segmented toggle for which map to show */}
+            <View style={styles.segmentControl}>
+                <Pressable
+                    onPress={() => setActiveMap('tube')}
+                    style={[styles.segmentButton, activeMap === 'tube' ? styles.segmentButtonActive : null]}
+                >
+                    <Text style={activeMap === 'tube' ? styles.segmentTextActive : styles.segmentText}>
+                        Tube lines
+                    </Text>
+                </Pressable>
+                <Pressable
+                    onPress={() => setActiveMap('city')}
+                    style={[styles.segmentButton, activeMap === 'city' ? styles.segmentButtonActive : null]}
+                >
+                    <Text style={activeMap === 'city' ? styles.segmentTextActive : styles.segmentText}>
+                        London city
+                    </Text>
+                </Pressable>
+            </View>
+
+            {activeMap === 'tube' ? (
+                <SectionCard>
+                    <TubeLineMap
+                        highlightedRoute={lastRoute?.path}
+                        onStationPress={(name) => {
+                            setSelectedDestination(name);
+                            stageDestination(name);
+                        }}
+                    />
+                    {lastRoute ? (
+                        <View style={styles.highlightBanner}>
+                            <Text style={styles.highlightText}>
+                                {lastRoute.originName} → {lastRoute.destinationName}
+                            </Text>
+                            <Text style={styles.highlightSubtext}>{lastRoute.cost} min · highlighted below</Text>
+                        </View>
+                    ) : null}
+                </SectionCard>
+            ) : (
+                <SectionCard>
+                    <OfflineMapSurface
+                        mbtilesPath={assetStatus?.resolvedPaths.mapMbtiles.resolvedPath ?? 'maps/london.mbtiles'}
+                        mapAvailable={assetStatus?.resolvedPaths.mapMbtiles.exists ?? false}
+                        showTube={showTube}
+                        showBus={showBus}
+                        showWalking={showWalking}
+                        selectedLabel={selectedDestination}
+                        selectedCoordinate={selectedCoordinate}
+                    />
+                </SectionCard>
+            )}
+
+            {/* Destination staging */}
+            <SectionCard>
+                <Text style={styles.sectionTitle}>Quick destinations</Text>
                 <Text style={shellStyles.copy}>
-                    Tap a station to stage it for GO. Interchange stations are drawn with a larger white dot.
+                    Pick a nearby tourist hub and we'll pre-fill the GO search.
                 </Text>
-            </SectionCard>
-            <OfflineMapSurface
-                mbtilesPath={assetStatus?.resolvedPaths.mapMbtiles.resolvedPath ?? 'maps/london.mbtiles'}
-                mapAvailable={assetStatus?.resolvedPaths.mapMbtiles.exists ?? false}
-                showTube={showTube}
-                showBus={showBus}
-                showWalking={showWalking}
-                selectedLabel={selectedDestination}
-                selectedCoordinate={selectedCoordinate}
-            />
-            <SectionCard>
-                <Text style={styles.sectionTitle}>Layer toggles</Text>
-                <View style={styles.toggleRow}><Text style={shellStyles.copy}>Tube</Text><Switch value={showTube} onValueChange={setShowTube} /></View>
-                <View style={styles.toggleRow}><Text style={shellStyles.copy}>Bus</Text><Switch value={showBus} onValueChange={setShowBus} /></View>
-                <View style={styles.toggleRow}><Text style={shellStyles.copy}>Walking</Text><Switch value={showWalking} onValueChange={setShowWalking} /></View>
-                <Text style={shellStyles.copy}>Runtime source: {runtimeState.source}. Map asset: {assetStatus?.resolvedPaths.mapMbtiles.exists ? 'present' : 'missing'}.</Text>
-                {!assetStatus?.resolvedPaths.mapMbtiles.exists ? <Text style={shellStyles.copy}>Safe demo fallback: map staging and coordinate controls still work, but this is not a true MBTiles-backed map demo yet.</Text> : null}
-                <Text style={shellStyles.copy}>Demo mode: {demoReadiness.mode}</Text>
-            </SectionCard>
-            <SectionCard>
-                <View style={styles.rowBetween}>
-                    <Text style={styles.sectionTitle}>Navigate here</Text>
-                    {stagedDestination ? <StatusChip label={`GO target: ${stagedDestination}`} tone="good" /> : null}
-                </View>
                 <View style={styles.destinationRow}>
                     {deviceInfo.sampleDestinations.map((destination) => (
-                        <Pressable key={destination} onPress={() => setSelectedDestination(destination)} style={[styles.destinationPill, selectedDestination === destination ? styles.destinationPillActive : null]}>
-                            <Text style={selectedDestination === destination ? styles.destinationTextActive : styles.destinationText}>{destination}</Text>
+                        <Pressable
+                            key={destination}
+                            onPress={() => {
+                                setSelectedDestination(destination);
+                                stageDestination(destination);
+                            }}
+                            style={[
+                                styles.destinationPill,
+                                selectedDestination === destination ? styles.destinationPillActive : null,
+                            ]}
+                        >
+                            <Text
+                                style={
+                                    selectedDestination === destination
+                                        ? styles.destinationTextActive
+                                        : styles.destinationText
+                                }
+                            >
+                                {destination}
+                            </Text>
                         </Pressable>
                     ))}
                 </View>
-                <View style={styles.buttonRow}>
-                    <Pressable disabled={!selectedDestination} onPress={() => selectedDestination ? stageDestination(selectedDestination) : null} style={[styles.primaryButton, !selectedDestination ? styles.primaryButtonDisabled : null]}>
-                        <Text style={styles.primaryButtonText}>Navigate in GO</Text>
-                    </Pressable>
-                </View>
-                <Text style={shellStyles.copy}>{selectedDestination ? `Destination ready: ${selectedDestination}. Send it to GO to run the route search.` : 'Pick a saved destination to stage the next journey.'}</Text>
             </SectionCard>
+
+            {/* Layer toggles (only meaningful on city map) */}
+            {activeMap === 'city' ? (
+                <SectionCard>
+                    <Text style={styles.sectionTitle}>Layers</Text>
+                    <View style={styles.toggleRow}>
+                        <Text style={shellStyles.copy}>Tube</Text>
+                        <Switch value={showTube} onValueChange={setShowTube} />
+                    </View>
+                    <View style={styles.toggleRow}>
+                        <Text style={shellStyles.copy}>Bus</Text>
+                        <Switch value={showBus} onValueChange={setShowBus} />
+                    </View>
+                    <View style={styles.toggleRow}>
+                        <Text style={shellStyles.copy}>Walking</Text>
+                        <Switch value={showWalking} onValueChange={setShowWalking} />
+                    </View>
+                </SectionCard>
+            ) : null}
+
+            {/* Collapsed diagnostics */}
+            <CollapsibleCard
+                title="Diagnostics"
+                subtitle={`Map asset: ${assetStatus?.resolvedPaths.mapMbtiles.exists ? 'present' : 'missing'} · Runtime: ${runtimeState.source}`}
+            >
+                <Text style={shellStyles.copy}>Demo mode: {demoReadiness.mode}</Text>
+                <SystemAlertsCard />
+            </CollapsibleCard>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    rowBetween: {
+    heroHeader: {
         alignItems: 'center',
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
+    heroCopy: {
+        color: colors.inkMuted,
+    },
+    segmentControl: {
+        backgroundColor: colors.paperSunken,
+        borderRadius: 12,
+        flexDirection: 'row',
+        padding: 4,
+    },
+    segmentButton: {
+        alignItems: 'center',
+        borderRadius: 10,
+        flex: 1,
+        paddingVertical: 10,
+    },
+    segmentButtonActive: {
+        backgroundColor: colors.paperRaised,
+    },
+    segmentText: {
+        color: colors.inkMuted,
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    segmentTextActive: {
+        color: colors.ink,
+        fontSize: 13,
+        fontWeight: '700',
+    },
     sectionTitle: {
         color: colors.ink,
-        fontSize: 18,
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    highlightBanner: {
+        backgroundColor: colors.accentSoft,
+        borderRadius: 12,
+        padding: 10,
+        marginTop: 8,
+    },
+    highlightText: {
+        color: colors.rail,
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    highlightSubtext: {
+        color: colors.rail,
+        fontSize: 12,
+        marginTop: 2,
+    },
+    destinationRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    destinationPill: {
+        backgroundColor: colors.paperSunken,
+        borderColor: colors.line,
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+    },
+    destinationPillActive: {
+        backgroundColor: colors.accent,
+        borderColor: colors.accent,
+    },
+    destinationText: {
+        color: colors.ink,
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    destinationTextActive: {
+        color: '#fffaf1',
+        fontSize: 13,
         fontWeight: '700',
     },
     toggleRow: {
         alignItems: 'center',
         flexDirection: 'row',
         justifyContent: 'space-between',
-    },
-    destinationRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-    },
-    buttonRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-    },
-    destinationPill: {
-        backgroundColor: '#ece4d7',
-        borderRadius: 999,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-    },
-    destinationPillActive: {
-        backgroundColor: colors.accent,
-    },
-    destinationText: {
-        color: colors.ink,
-        fontWeight: '600',
-    },
-    destinationTextActive: {
-        color: '#fffaf1',
-        fontWeight: '700',
-    },
-    primaryButton: {
-        backgroundColor: colors.accent,
-        borderRadius: 14,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-    },
-    primaryButtonDisabled: {
-        opacity: 0.45,
-    },
-    primaryButtonText: {
-        color: '#fffaf1',
-        fontWeight: '700',
     },
 });
