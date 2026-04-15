@@ -64,6 +64,16 @@ export function createMobilePipeline(): MobilePipeline {
     const knownStations = deriveKnownStations(tubeGraph);
     const graph = buildWeightedGraphFromTubeAsset(tubeGraph);
 
+    // Build a station-name → coordinate map for the walking router. The TfL
+    // tube graph ships with lat/lon on every node; we pass these in so
+    // HaversineWalkingRouter can always produce a real estimate.
+    const stationCoordinates = new Map<string, { lat: number; lon: number }>();
+    for (const node of tubeGraph.nodes as Array<{ name: string; lat?: number; lon?: number }>) {
+        if (typeof node.lat === 'number' && typeof node.lon === 'number') {
+            stationCoordinates.set(node.name, { lat: node.lat, lon: node.lon });
+        }
+    }
+
     const intentModel = new FallbackStructuredIntentAdapter(
         new LlamaBackedStructuredIntentAdapter(modelManager, assetLoader),
         new RuleBasedStructuredModelClient(knownStations)
@@ -85,6 +95,7 @@ export function createMobilePipeline(): MobilePipeline {
             graph,
             disruptions,
             walkingAssetsAvailable: true,
+            stationCoordinates,
             deviceIdProvider,
         }
     );
@@ -206,6 +217,7 @@ export function createMobilePipeline(): MobilePipeline {
                     graph,
                     disruptions: disruptionCache.events,
                     walkingAssetsAvailable: walkingInput.assetsAvailable,
+                    stationCoordinates,
                     deviceIdProvider,
                 }
             );

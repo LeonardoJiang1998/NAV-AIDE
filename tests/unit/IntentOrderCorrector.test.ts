@@ -85,6 +85,20 @@ test('leaves extraction alone when neither name appears in raw text', () => {
     assert.deepEqual(correctOriginDestinationOrder(input), input);
 });
 
+test('moves destination to origin and extracts after-to fragment when LLM mistags', () => {
+    const input: IntentExtraction = {
+        ...base,
+        intent: 'route',
+        origin: null,
+        destination: 'Waterloo',
+        rawQuery: 'Waterloo to London Eye',
+    };
+
+    const corrected = correctOriginDestinationOrder(input);
+    assert.equal(corrected.origin, 'Waterloo');
+    assert.equal(corrected.destination, 'London Eye');
+});
+
 test('leaves same-station extractions alone', () => {
     const input: IntentExtraction = {
         ...base,

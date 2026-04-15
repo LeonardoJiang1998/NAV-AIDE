@@ -1,14 +1,17 @@
-[out:json][timeout:120];
+[out:json][timeout:90];
 (
-  // Tourist attractions, museums, viewpoints
-  node["tourism"~"museum|attraction|gallery|viewpoint|theme_park|zoo|aquarium|monument"](51.28,-0.51,51.69,0.33);
-  // Historic landmarks
-  node["historic"~"castle|memorial|monument|palace|ruins|cathedral"](51.28,-0.51,51.69,0.33);
-  // Major theatres + cinemas
-  node["amenity"~"theatre|arts_centre|cinema"](51.28,-0.51,51.69,0.33);
-  // Parks and gardens (as nodes where possible)
-  node["leisure"~"park|garden"](51.28,-0.51,51.69,0.33);
-  // Iconic landmarks by name
-  node["name"~"Eye|Tower|Bridge|Palace"](51.48,-0.18,51.56,0.01);
+  nwr["tourism"="attraction"](51.35,-0.45,51.65,0.2);
+  nwr["tourism"="museum"](51.35,-0.45,51.65,0.2);
+  nwr["tourism"="gallery"](51.35,-0.45,51.65,0.2);
+  nwr["tourism"="zoo"](51.35,-0.45,51.65,0.2);
+  nwr["tourism"="aquarium"](51.35,-0.45,51.65,0.2);
+  nwr["tourism"="viewpoint"](51.35,-0.45,51.65,0.2);
+  nwr["historic"="castle"](51.35,-0.45,51.65,0.2);
+  nwr["historic"="palace"](51.35,-0.45,51.65,0.2);
+  nwr["historic"="cathedral"](51.35,-0.45,51.65,0.2);
+  nwr["historic"="monument"](51.35,-0.45,51.65,0.2);
+  nwr["amenity"="theatre"](51.35,-0.45,51.65,0.2);
+  nwr["amenity"="arts_centre"](51.35,-0.45,51.65,0.2);
+  nwr["leisure"="park"](51.45,-0.25,51.58,0.03);
 );
 out center tags;

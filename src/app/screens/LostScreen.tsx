@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { CollapsibleCard } from '../components/CollapsibleCard';
 import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
 import { SystemAlertsCard } from '../components/SystemAlertsCard';
@@ -16,91 +17,84 @@ interface FlowAlert {
 }
 
 function mapPipelineError(error: unknown): FlowAlert {
-    const message = error instanceof Error ? error.message : 'Unknown LOST? pipeline failure.';
-
+    const message = error instanceof Error ? error.message : 'Unknown error.';
     if (/hallucinated/i.test(message)) {
-        return { label: 'hallucinated locations', detail: 'The normalized response named a place that is not locally grounded, so the request was rejected.', tone: 'bad' };
+        return { label: 'hallucinated place', detail: 'The response referenced a place not in our local index.', tone: 'bad' };
     }
-
     if (/json|parse/i.test(message)) {
-        return { label: 'invalid JSON from LLM', detail: 'Structured normalization failed to return valid JSON, so the Ask People flow stopped safely.', tone: 'bad' };
+        return { label: 'invalid response', detail: 'The model returned malformed JSON; try again.', tone: 'bad' };
     }
-
-    return { label: 'ask people error', detail: message, tone: 'bad' };
+    return { label: 'error', detail: message, tone: 'bad' };
 }
 
 export function LostScreen(): React.JSX.Element {
-    const { demoReadiness, mobilePipeline, permissions, runtimeState, voiceCapabilities } = useAppShell();
-    const [signpostText, setSignpostText] = useState('Park');
-    const [askPeopleText, setAskPeopleText] = useState('I am lost near Bank');
+    const { mobilePipeline, permissions, voiceCapabilities } = useAppShell();
+    const [signpostText, setSignpostText] = useState('');
+    const [askPeopleText, setAskPeopleText] = useState('');
     const [signpostResult, setSignpostResult] = useState<ReturnType<typeof mobilePipeline.entityResolver.resolve> | null>(null);
     const [askPeopleResult, setAskPeopleResult] = useState<Awaited<ReturnType<typeof mobilePipeline.queryPipeline.execute>> | null>(null);
     const [flowAlert, setFlowAlert] = useState<FlowAlert | null>(null);
     const stt = useSpeechToText();
 
     useEffect(() => {
-        if (stt.transcript) {
-            setAskPeopleText(stt.transcript);
-        }
+        if (stt.transcript) setAskPeopleText(stt.transcript);
     }, [stt.transcript]);
 
     useEffect(() => {
-        if (stt.error) {
-            setFlowAlert({ label: 'speech error', detail: stt.error, tone: 'bad' });
-        }
+        if (stt.error) setFlowAlert({ label: 'speech error', detail: stt.error, tone: 'bad' });
     }, [stt.error]);
 
     const toggleSpeakButton = async () => {
         if (!permissions.microphone || !voiceCapabilities?.stt) {
-            setFlowAlert({ label: 'stt unavailable', detail: 'OS speech input is not available because microphone permission or STT capability is missing.', tone: 'bad' });
+            setFlowAlert({
+                label: 'voice input unavailable',
+                detail: 'Voice input needs microphone permission (iOS Settings > NavAideShell).',
+                tone: 'bad',
+            });
             return;
         }
-
-        if (stt.isListening) {
-            await stt.stop();
-        } else {
-            await stt.start();
-        }
+        if (stt.isListening) await stt.stop();
+        else await stt.start();
     };
 
-    const lowConfidenceTranscript = askPeopleText.trim().length < 10 || askPeopleText.includes('[unclear]');
-
     const resolveSignpost = () => {
-        const resolution = mobilePipeline.entityResolver.resolve(signpostText);
+        setFlowAlert(null);
+        const trimmed = signpostText.trim();
+        if (!trimmed) {
+            setFlowAlert({ label: 'empty input', detail: 'Type the station name you can see on the signpost.', tone: 'warn' });
+            return;
+        }
+        const resolution = mobilePipeline.entityResolver.resolve(trimmed);
         setSignpostResult(resolution);
-        setFlowAlert(
-            resolution.status === 'unresolved'
-                ? { label: 'signpost not resolved', detail: 'The local alias and fuzzy resolver could not match that signpost to a trusted station.', tone: 'bad' }
-                : resolution.status === 'disambiguation'
-                    ? { label: 'disambiguation required', detail: 'The signpost text matched more than one local place, so NAV AiDE is asking for a clearer target.', tone: 'warn' }
-                    : null
-        );
+        if (resolution.status === 'unresolved') {
+            setFlowAlert({
+                label: 'no match',
+                detail: 'We could not find that station in our offline index. Double-check the spelling.',
+                tone: 'bad',
+            });
+        } else if (resolution.status === 'disambiguation') {
+            setFlowAlert({
+                label: 'multiple matches',
+                detail: 'Pick the closest candidate from the list.',
+                tone: 'warn',
+            });
+        }
     };
 
     const askPeople = async () => {
-        if (!permissions.microphone || !voiceCapabilities?.stt) {
-            setFlowAlert({ label: 'stt unavailable', detail: 'OS speech input is not available because microphone permission or STT capability is missing.', tone: 'bad' });
-            return;
-        }
-
-        if (lowConfidenceTranscript) {
-            setFlowAlert({ label: 'low-confidence STT', detail: 'The transcript looks too uncertain to normalize safely. Speak again or type a clearer phrase.', tone: 'warn' });
-            return;
-        }
-
         setFlowAlert(null);
-
+        const trimmed = askPeopleText.trim();
+        if (!trimmed) {
+            setFlowAlert({ label: 'empty input', detail: 'Describe what you heard, or tap "Speak" to record.', tone: 'warn' });
+            return;
+        }
         try {
-            const result = await mobilePipeline.queryPipeline.execute(askPeopleText, mobilePipeline.knownStations);
+            const result = await mobilePipeline.queryPipeline.execute(trimmed, mobilePipeline.knownStations);
             setAskPeopleResult(result);
-
             if (result.status === 'unresolved') {
-                setFlowAlert({ label: 'ask people no match', detail: 'The normalized request did not produce a trusted local place match.', tone: 'bad' });
-                return;
-            }
-
-            if (result.status === 'needs_disambiguation') {
-                setFlowAlert({ label: 'disambiguation required', detail: 'The normalized request matched multiple local entities, so NAV AiDE is asking for a more specific place.', tone: 'warn' });
+                setFlowAlert({ label: 'not understood', detail: 'Try a clearer phrase like "I am near Bank station".', tone: 'bad' });
+            } else if (result.status === 'needs_disambiguation') {
+                setFlowAlert({ label: 'more than one match', detail: 'Tap the right one below.', tone: 'warn' });
             }
         } catch (error) {
             setFlowAlert(mapPipelineError(error));
@@ -108,72 +102,160 @@ export function LostScreen(): React.JSX.Element {
     };
 
     return (
-        <ScrollView contentContainerStyle={shellStyles.screen}>
-            <Text style={shellStyles.title}>LOST?</Text>
-            <Text style={shellStyles.copy}>Resolve nearby signposts directly with EntityResolver, or normalize a spoken request through the mobile query pipeline before disambiguation.</Text>
-            <SystemAlertsCard />
+        <ScrollView contentContainerStyle={shellStyles.screen} keyboardShouldPersistTaps="handled">
+            <View>
+                <Text style={shellStyles.title}>LOST?</Text>
+                <Text style={[shellStyles.copy, styles.heroCopy]}>
+                    Two safe ways to reorient yourself: read a station sign, or ask a passerby.
+                </Text>
+            </View>
+
+            {/* Signpost flow */}
             <SectionCard>
-                <Text style={styles.sectionTitle}>Signpost flow</Text>
-                <Text style={shellStyles.copy}>Runtime source: {runtimeState.source}. This flow resolves exact, alias, and disambiguation cases locally before asking for route help.</Text>
-                <TextInput value={signpostText} onChangeText={setSignpostText} style={styles.input} placeholder="Type the station sign you can see" placeholderTextColor="#7c8a85" />
+                <Text style={styles.sectionTitle}>1. Read a signpost</Text>
+                <Text style={shellStyles.copy}>Type what you see on the nearest station sign.</Text>
+                <TextInput
+                    value={signpostText}
+                    onChangeText={setSignpostText}
+                    style={styles.input}
+                    placeholder="e.g. Green Park"
+                    placeholderTextColor="#7c8a85"
+                    accessibilityLabel="Station signpost"
+                />
                 <View style={styles.exampleRow}>
-                    <Pressable onPress={() => setSignpostText('Green Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Try exact match</Text></Pressable>
-                    <Pressable onPress={() => setSignpostText('Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Try disambiguation</Text></Pressable>
+                    <Pressable onPress={() => setSignpostText('Green Park')} style={styles.chipButton}>
+                        <Text style={styles.chipText}>Try "Green Park"</Text>
+                    </Pressable>
+                    <Pressable onPress={() => setSignpostText('Park')} style={styles.chipButton}>
+                        <Text style={styles.chipText}>Try "Park"</Text>
+                    </Pressable>
                 </View>
-                <Pressable onPress={resolveSignpost} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Resolve signpost</Text></Pressable>
+                <Pressable onPress={resolveSignpost} style={styles.primaryButton}>
+                    <Text style={styles.primaryButtonText}>Find it on the network</Text>
+                </Pressable>
                 {signpostResult ? (
-                    <>
-                        <StatusChip label={signpostResult.status} tone={signpostResult.status === 'resolved' ? 'good' : signpostResult.status === 'disambiguation' ? 'warn' : 'bad'} />
-                        <Text style={shellStyles.copy}>{signpostResult.bestCandidate ? `Best match: ${signpostResult.bestCandidate.entity.canonicalName}` : 'No signpost match found.'}</Text>
+                    <View style={styles.resultBlock}>
+                        <StatusChip
+                            label={signpostResult.status}
+                            tone={
+                                signpostResult.status === 'resolved'
+                                    ? 'good'
+                                    : signpostResult.status === 'disambiguation'
+                                        ? 'warn'
+                                        : 'bad'
+                            }
+                        />
+                        {signpostResult.bestCandidate ? (
+                            <Text style={styles.bigResult}>
+                                {signpostResult.bestCandidate.entity.canonicalName}
+                            </Text>
+                        ) : (
+                            <Text style={shellStyles.copy}>Not in the offline index.</Text>
+                        )}
                         {signpostResult.status === 'disambiguation'
                             ? signpostResult.candidates.map((candidate) => (
-                                <Text key={candidate.entity.id} style={shellStyles.copy}>Candidate: {candidate.entity.canonicalName}</Text>
+                                <Pressable
+                                    key={candidate.entity.id}
+                                    onPress={() => setSignpostText(candidate.entity.canonicalName)}
+                                    style={styles.candidatePill}
+                                >
+                                    <Text style={styles.candidateText}>{candidate.entity.canonicalName}</Text>
+                                </Pressable>
                             ))
                             : null}
-                    </>
+                    </View>
                 ) : null}
             </SectionCard>
+
+            {/* Ask People flow */}
             <SectionCard>
-                <Text style={styles.sectionTitle}>Ask People flow</Text>
-                <Text style={shellStyles.copy}>OS STT available: {voiceCapabilities?.stt ? 'yes' : 'no'}. Low-confidence STT stays surfaced as an explicit shell error state.</Text>
-                {!voiceCapabilities?.stt ? <Text style={shellStyles.copy}>Safe demo fallback: use typed transcript examples below instead of live speech.</Text> : null}
-                {demoReadiness.mode === 'fixture-fallback-mode' ? <Text style={shellStyles.copy}>Fixture fallback remains explicit in this flow so internal demos do not imply production asset coverage.</Text> : null}
-                <TextInput value={askPeopleText} onChangeText={setAskPeopleText} style={styles.input} placeholder="Speech transcript (or type manually)" placeholderTextColor="#7c8a85" />
+                <Text style={styles.sectionTitle}>2. Ask a passer-by</Text>
+                <Text style={shellStyles.copy}>
+                    Tap "Speak", listen to what they tell you, then let us ground it against the real network.
+                </Text>
+                <TextInput
+                    value={askPeopleText}
+                    onChangeText={setAskPeopleText}
+                    style={styles.input}
+                    placeholder="Paste or speak what they said"
+                    placeholderTextColor="#7c8a85"
+                    multiline
+                    accessibilityLabel="What they told you"
+                />
                 <View style={styles.exampleRow}>
-                    <Pressable onPress={() => void toggleSpeakButton()} style={stt.isListening ? styles.primaryButton : styles.secondaryButton}>
-                        <Text style={stt.isListening ? styles.primaryButtonText : styles.secondaryButtonText}>{stt.isListening ? 'Stop listening' : 'Speak'}</Text>
+                    <Pressable
+                        onPress={() => void toggleSpeakButton()}
+                        style={[styles.chipButton, stt.isListening ? styles.chipButtonActive : null]}
+                    >
+                        <Text style={stt.isListening ? styles.chipTextActive : styles.chipText}>
+                            {stt.isListening ? '● Listening' : '🎤 Speak'}
+                        </Text>
                     </Pressable>
-                    <Pressable onPress={() => setAskPeopleText('I am lost near Green Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Resolved example</Text></Pressable>
-                    <Pressable onPress={() => setAskPeopleText('Take me to Park')} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Ambiguous example</Text></Pressable>
+                    <Pressable onPress={() => setAskPeopleText('I am near Green Park')} style={styles.chipButton}>
+                        <Text style={styles.chipText}>Clear example</Text>
+                    </Pressable>
+                    <Pressable onPress={() => setAskPeopleText('Take me to Park')} style={styles.chipButton}>
+                        <Text style={styles.chipText}>Ambiguous example</Text>
+                    </Pressable>
                 </View>
-                {stt.isListening ? <Text style={shellStyles.copy}>Listening...</Text> : null}
-                {stt.partialTranscript ? <Text style={shellStyles.copy}>Hearing: {stt.partialTranscript}</Text> : null}
-                {lowConfidenceTranscript ? <StatusChip label="low-confidence STT" tone="warn" /> : null}
-                <Pressable onPress={() => void askPeople()} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Normalize and resolve</Text></Pressable>
+                {stt.partialTranscript ? (
+                    <Text style={styles.hearing}>Hearing: “{stt.partialTranscript}”</Text>
+                ) : null}
+                <Pressable onPress={() => void askPeople()} style={styles.primaryButton}>
+                    <Text style={styles.primaryButtonText}>Make sense of it</Text>
+                </Pressable>
                 {askPeopleResult ? (
-                    <>
-                        <StatusChip label={askPeopleResult.status} tone={askPeopleResult.status === 'complete' ? 'good' : askPeopleResult.status === 'needs_disambiguation' ? 'warn' : 'bad'} />
-                        <Text style={shellStyles.copy}>{askPeopleResult.rendered?.text ?? 'No spoken match found.'}</Text>
-                        {(askPeopleResult.origin?.status === 'disambiguation' ? askPeopleResult.origin.candidates : askPeopleResult.destination?.candidates ?? []).map((candidate) => (
-                            <Text key={candidate.entity.id} style={shellStyles.copy}>Candidate: {candidate.entity.canonicalName}</Text>
-                        ))}
-                    </>
+                    <View style={styles.resultBlock}>
+                        <StatusChip
+                            label={askPeopleResult.status.replace('_', ' ')}
+                            tone={
+                                askPeopleResult.status === 'complete'
+                                    ? 'good'
+                                    : askPeopleResult.status === 'needs_disambiguation'
+                                        ? 'warn'
+                                        : 'bad'
+                            }
+                        />
+                        {askPeopleResult.rendered?.text ? (
+                            <Text style={styles.bigResult}>{askPeopleResult.rendered.text}</Text>
+                        ) : null}
+                        {(askPeopleResult.origin?.status === 'disambiguation'
+                            ? askPeopleResult.origin.candidates
+                            : askPeopleResult.destination?.candidates ?? [])
+                            .map((candidate) => (
+                                <Pressable
+                                    key={candidate.entity.id}
+                                    onPress={() => setAskPeopleText(`I am near ${candidate.entity.canonicalName}`)}
+                                    style={styles.candidatePill}
+                                >
+                                    <Text style={styles.candidateText}>{candidate.entity.canonicalName}</Text>
+                                </Pressable>
+                            ))}
+                    </View>
                 ) : null}
             </SectionCard>
+
             {flowAlert ? (
-                <SectionCard>
+                <SectionCard style={styles.alertCard}>
                     <StatusChip label={flowAlert.label} tone={flowAlert.tone} />
                     <Text style={shellStyles.copy}>{flowAlert.detail}</Text>
                 </SectionCard>
             ) : null}
+
+            <CollapsibleCard title="Diagnostics">
+                <SystemAlertsCard />
+            </CollapsibleCard>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
+    heroCopy: {
+        color: colors.inkMuted,
+    },
     sectionTitle: {
         color: colors.ink,
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '700',
     },
     input: {
@@ -182,13 +264,42 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         borderWidth: 1,
         color: colors.ink,
+        fontSize: 16,
+        minHeight: 48,
         paddingHorizontal: 14,
         paddingVertical: 12,
     },
     exampleRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
+        gap: 8,
+    },
+    chipButton: {
+        backgroundColor: colors.paperSunken,
+        borderColor: colors.line,
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    chipButtonActive: {
+        backgroundColor: colors.danger,
+        borderColor: colors.danger,
+    },
+    chipText: {
+        color: colors.ink,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    chipTextActive: {
+        color: '#fffaf1',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    hearing: {
+        color: colors.inkMuted,
+        fontSize: 13,
+        fontStyle: 'italic',
     },
     primaryButton: {
         alignSelf: 'flex-start',
@@ -201,15 +312,33 @@ const styles = StyleSheet.create({
         color: '#fffaf1',
         fontWeight: '700',
     },
-    secondaryButton: {
-        alignSelf: 'flex-start',
-        backgroundColor: '#ece4d7',
+    resultBlock: {
+        backgroundColor: colors.paperSunken,
         borderRadius: 14,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
+        gap: 8,
+        marginTop: 4,
+        padding: 12,
     },
-    secondaryButtonText: {
+    bigResult: {
         color: colors.ink,
+        fontSize: 16,
         fontWeight: '700',
+    },
+    candidatePill: {
+        alignSelf: 'flex-start',
+        backgroundColor: colors.paperRaised,
+        borderColor: colors.line,
+        borderWidth: 1,
+        borderRadius: 14,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    candidateText: {
+        color: colors.ink,
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    alertCard: {
+        gap: 8,
     },
 });
