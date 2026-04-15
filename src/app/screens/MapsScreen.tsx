@@ -5,6 +5,7 @@ import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
 import { SystemAlertsCard } from '../components/SystemAlertsCard';
 import { OfflineMapSurface } from '../map/OfflineMapSurface';
+import { TubeLineMap } from '../map/TubeLineMap';
 import { sampleDestinationPins } from '../pipeline/mobileFixtures';
 import { useAppShell } from '../state/AppShellContext';
 import { colors } from '../theme';
@@ -26,6 +27,17 @@ export function MapsScreen(): React.JSX.Element {
             <Text style={shellStyles.title}>Maps</Text>
             <Text style={shellStyles.copy}>Toggle map layers, inspect the offline surface, and stage a navigate-here destination for the GO flow.</Text>
             <SystemAlertsCard />
+            <SectionCard>
+                <TubeLineMap
+                    onStationPress={(name) => {
+                        setSelectedDestination(name);
+                        stageDestination(name);
+                    }}
+                />
+                <Text style={shellStyles.copy}>
+                    Tap a station to stage it for GO. Interchange stations are drawn with a larger white dot.
+                </Text>
+            </SectionCard>
             <OfflineMapSurface
                 mbtilesPath={assetStatus?.resolvedPaths.mapMbtiles.resolvedPath ?? 'maps/london.mbtiles'}
                 mapAvailable={assetStatus?.resolvedPaths.mapMbtiles.exists ?? false}

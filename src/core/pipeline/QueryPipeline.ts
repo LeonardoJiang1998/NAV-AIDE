@@ -7,6 +7,7 @@ import { type POIResult, POIService } from '../poi/POIService';
 import { Dijkstra, type ShortestPathResult, type WeightedGraph } from '../routing/Dijkstra';
 import { ValhallaBridge, type WalkingRouteResult } from '../routing/ValhallaBridge';
 import { CacheAwareDisruptionService, type DisruptionEvent } from '../services/DisruptionService';
+import { buildRouteNarrative } from './RouteNarrative';
 import { buildTubeSegments, type TubeSegment } from './TubeGraphTransforms';
 import { EntityResolver, type EntityRecord, type ResolutionResult } from './EntityResolver';
 
@@ -133,8 +134,13 @@ export class QueryPipeline {
         const rendered = await this.dependencies.responseRenderer.render({
             intent: extraction.intent,
             summary: route
-                ? `Route from ${origin.bestCandidate.entity.canonicalName} to ${destination.bestCandidate.entity.canonicalName} costs ${route.cost} minutes.`
-                : `No route found from ${origin.bestCandidate.entity.canonicalName} to ${destination.bestCandidate.entity.canonicalName}.`,
+                ? buildRouteNarrative(
+                      origin.bestCandidate.entity.canonicalName,
+                      destination.bestCandidate.entity.canonicalName,
+                      tubeSegments,
+                      route.cost,
+                  )
+                : `No tube route was found from ${origin.bestCandidate.entity.canonicalName} to ${destination.bestCandidate.entity.canonicalName}.`,
             allowedPlaceNames,
         });
 
