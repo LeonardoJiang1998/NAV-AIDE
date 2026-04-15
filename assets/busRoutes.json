@@ -2,32 +2,403 @@
     "schemaVersion": 1,
     "generatedBy": "scripts/data-pipeline/generate-bus-routes.js",
     "assetType": "bus-routes",
-    "fixtureStrategy": {
-        "description": "Use a deterministic small route set for Stage 2 Node tests, then swap to a TfL-derived offline export during later data ingestion work.",
-        "sourceOfTruth": "scripts/data-pipeline/seeds/busRoutes.seed.json",
-        "requiredFields": [
-            "routeId",
-            "displayName",
-            "stops"
-        ]
-    },
     "routes": [
         {
-            "routeId": "rv1",
-            "displayName": "RV1 Sample",
+            "routeId": "9",
+            "displayName": "9 — Hammersmith to Aldwych",
             "stops": [
-                "Waterloo",
-                "Covent Garden",
-                "Tower Gateway"
+                "Hammersmith",
+                "Kensington High Street",
+                "Knightsbridge",
+                "Hyde Park Corner",
+                "Piccadilly Circus",
+                "Trafalgar Square",
+                "Aldwych"
+            ]
+        },
+        {
+            "routeId": "11",
+            "displayName": "11 — Fulham to Liverpool Street",
+            "stops": [
+                "Fulham Broadway",
+                "Sloane Square",
+                "Victoria",
+                "Westminster",
+                "Trafalgar Square",
+                "Aldwych",
+                "St Paul's",
+                "Bank",
+                "Liverpool Street"
+            ]
+        },
+        {
+            "routeId": "14",
+            "displayName": "14 — Putney Heath to Warren Street",
+            "stops": [
+                "Putney Bridge",
+                "Fulham Broadway",
+                "South Kensington",
+                "Knightsbridge",
+                "Hyde Park Corner",
+                "Green Park",
+                "Piccadilly Circus",
+                "Shaftesbury Avenue",
+                "Warren Street"
+            ]
+        },
+        {
+            "routeId": "15",
+            "displayName": "15 — Blackwall to Trafalgar Square",
+            "stops": [
+                "Canary Wharf",
+                "Tower Hill",
+                "Monument",
+                "Cannon Street",
+                "St Paul's",
+                "Aldwych",
+                "Trafalgar Square"
+            ]
+        },
+        {
+            "routeId": "23",
+            "displayName": "23 — Westbourne Park to Liverpool Street",
+            "stops": [
+                "Westbourne Park",
+                "Paddington",
+                "Marble Arch",
+                "Oxford Circus",
+                "Tottenham Court Road",
+                "Holborn",
+                "Bank",
+                "Liverpool Street"
+            ]
+        },
+        {
+            "routeId": "24",
+            "displayName": "24 — Hampstead Heath to Pimlico",
+            "stops": [
+                "Hampstead Heath",
+                "Camden Town",
+                "Mornington Crescent",
+                "Euston",
+                "Warren Street",
+                "Tottenham Court Road",
+                "Leicester Square",
+                "Trafalgar Square",
+                "Westminster",
+                "Pimlico"
+            ]
+        },
+        {
+            "routeId": "38",
+            "displayName": "38 — Clapton to Victoria",
+            "stops": [
+                "Hackney",
+                "Angel",
+                "Holborn",
+                "Piccadilly Circus",
+                "Green Park",
+                "Hyde Park Corner",
+                "Victoria"
+            ]
+        },
+        {
+            "routeId": "73",
+            "displayName": "73 — Stoke Newington to Victoria",
+            "stops": [
+                "Stoke Newington",
+                "Angel",
+                "King's Cross",
+                "Euston",
+                "Oxford Circus",
+                "Marble Arch",
+                "Hyde Park Corner",
+                "Victoria"
+            ]
+        },
+        {
+            "routeId": "88",
+            "displayName": "88 — Camden Town to Clapham Common",
+            "stops": [
+                "Camden Town",
+                "Trafalgar Square",
+                "Westminster",
+                "Vauxhall",
+                "Stockwell",
+                "Clapham Common"
+            ]
+        },
+        {
+            "routeId": "91",
+            "displayName": "91 — Crouch End to Trafalgar Square",
+            "stops": [
+                "Crouch End",
+                "Archway",
+                "Kentish Town",
+                "Camden Town",
+                "Euston",
+                "Holborn",
+                "Aldwych",
+                "Trafalgar Square"
             ]
         },
         {
             "routeId": "139",
-            "displayName": "139 Sample",
+            "displayName": "139 — Waterloo to West Hampstead",
             "stops": [
                 "Waterloo",
                 "Piccadilly Circus",
-                "Oxford Circus"
+                "Oxford Circus",
+                "Baker Street",
+                "Swiss Cottage",
+                "West Hampstead"
+            ]
+        },
+        {
+            "routeId": "148",
+            "displayName": "148 — Camberwell to White City",
+            "stops": [
+                "Camberwell",
+                "Elephant and Castle",
+                "Westminster",
+                "Victoria",
+                "Hyde Park Corner",
+                "Marble Arch",
+                "Notting Hill Gate",
+                "Shepherd's Bush",
+                "White City"
+            ]
+        },
+        {
+            "routeId": "159",
+            "displayName": "159 — Streatham to Paddington",
+            "stops": [
+                "Streatham",
+                "Brixton",
+                "Kennington",
+                "Westminster",
+                "Trafalgar Square",
+                "Oxford Circus",
+                "Baker Street",
+                "Paddington"
+            ]
+        },
+        {
+            "routeId": "176",
+            "displayName": "176 — Penge to Trafalgar Square",
+            "stops": [
+                "Penge",
+                "Camberwell",
+                "Elephant and Castle",
+                "Waterloo",
+                "Aldwych",
+                "Trafalgar Square"
+            ]
+        },
+        {
+            "routeId": "188",
+            "displayName": "188 — Russell Square to North Greenwich",
+            "stops": [
+                "Russell Square",
+                "Waterloo",
+                "Elephant and Castle",
+                "Borough",
+                "London Bridge",
+                "Bermondsey",
+                "Greenwich",
+                "North Greenwich"
+            ]
+        },
+        {
+            "routeId": "205",
+            "displayName": "205 — Paddington to Bow",
+            "stops": [
+                "Paddington",
+                "Marylebone",
+                "Euston",
+                "King's Cross",
+                "Angel",
+                "Old Street",
+                "Liverpool Street",
+                "Whitechapel",
+                "Mile End",
+                "Bow"
+            ]
+        },
+        {
+            "routeId": "274",
+            "displayName": "274 — Angel to Lancaster Gate",
+            "stops": [
+                "Angel",
+                "King's Cross",
+                "Euston",
+                "Great Portland Street",
+                "Baker Street",
+                "Marble Arch",
+                "Lancaster Gate"
+            ]
+        },
+        {
+            "routeId": "341",
+            "displayName": "341 — Waterloo to Angel",
+            "stops": [
+                "Waterloo",
+                "Aldwych",
+                "Holborn",
+                "King's Cross",
+                "Angel"
+            ]
+        },
+        {
+            "routeId": "343",
+            "displayName": "343 — New Cross to City",
+            "stops": [
+                "New Cross",
+                "Bermondsey",
+                "London Bridge",
+                "Monument",
+                "Bank"
+            ]
+        },
+        {
+            "routeId": "390",
+            "displayName": "390 — Archway to Notting Hill Gate",
+            "stops": [
+                "Archway",
+                "Kentish Town",
+                "Camden Town",
+                "Great Portland Street",
+                "Oxford Circus",
+                "Marble Arch",
+                "Notting Hill Gate"
+            ]
+        },
+        {
+            "routeId": "453",
+            "displayName": "453 — Marylebone to Deptford Bridge",
+            "stops": [
+                "Marylebone",
+                "Oxford Circus",
+                "Trafalgar Square",
+                "Elephant and Castle",
+                "Borough",
+                "London Bridge",
+                "Bermondsey"
+            ]
+        },
+        {
+            "routeId": "RV1",
+            "displayName": "RV1 — Covent Garden to Tower Gateway",
+            "stops": [
+                "Covent Garden",
+                "Waterloo",
+                "Southwark",
+                "Tate Modern",
+                "London Bridge",
+                "Tower Bridge",
+                "Tower Gateway"
+            ]
+        },
+        {
+            "routeId": "N9",
+            "displayName": "N9 — Heathrow to Aldwych (Night Bus)",
+            "stops": [
+                "Heathrow Airport",
+                "Hammersmith",
+                "Kensington High Street",
+                "Knightsbridge",
+                "Hyde Park Corner",
+                "Piccadilly Circus",
+                "Trafalgar Square",
+                "Aldwych"
+            ]
+        },
+        {
+            "routeId": "N11",
+            "displayName": "N11 — Ealing to Liverpool Street (Night Bus)",
+            "stops": [
+                "Ealing Broadway",
+                "Shepherd's Bush",
+                "Notting Hill Gate",
+                "Marble Arch",
+                "Oxford Circus",
+                "Holborn",
+                "Bank",
+                "Liverpool Street"
+            ]
+        },
+        {
+            "routeId": "N15",
+            "displayName": "N15 — Romford to Trafalgar Square (Night Bus)",
+            "stops": [
+                "Romford",
+                "Barking",
+                "East Ham",
+                "Stratford",
+                "Mile End",
+                "Whitechapel",
+                "Tower Hill",
+                "Monument",
+                "Trafalgar Square"
+            ]
+        },
+        {
+            "routeId": "N26",
+            "displayName": "N26 — Chingford to Trafalgar Square (Night Bus)",
+            "stops": [
+                "Walthamstow",
+                "Tottenham Hale",
+                "Seven Sisters",
+                "Finsbury Park",
+                "Holloway Road",
+                "King's Cross",
+                "Holborn",
+                "Trafalgar Square"
+            ]
+        },
+        {
+            "routeId": "N29",
+            "displayName": "N29 — Enfield to Trafalgar Square (Night Bus)",
+            "stops": [
+                "Enfield",
+                "Wood Green",
+                "Turnpike Lane",
+                "Finsbury Park",
+                "Angel",
+                "Holborn",
+                "Aldwych",
+                "Trafalgar Square"
+            ]
+        },
+        {
+            "routeId": "N73",
+            "displayName": "N73 — Walthamstow to Victoria (Night Bus)",
+            "stops": [
+                "Walthamstow",
+                "Tottenham Hale",
+                "Seven Sisters",
+                "Finsbury Park",
+                "Angel",
+                "King's Cross",
+                "Euston",
+                "Oxford Circus",
+                "Marble Arch",
+                "Victoria"
+            ]
+        },
+        {
+            "routeId": "N207",
+            "displayName": "N207 — Uxbridge to Holborn (Night Bus)",
+            "stops": [
+                "Uxbridge",
+                "Ealing Broadway",
+                "Acton Town",
+                "Hammersmith",
+                "Kensington High Street",
+                "Notting Hill Gate",
+                "Marble Arch",
+                "Oxford Circus",
+                "Holborn"
             ]
         }
     ]

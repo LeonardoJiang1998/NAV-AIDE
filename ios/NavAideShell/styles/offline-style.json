@@ -1,16 +1,40 @@
 {
-  "version": 8,
-  "name": "NAV-AIDE Offline",
-  "sources": {},
-  "layers": [
-    {
-      "id": "background",
-      "type": "background",
-      "paint": {
-        "background-color": "#f0ede6"
-      }
-    }
-  ],
-  "center": [-0.1276, 51.5074],
-  "zoom": 12
+    "version": 8,
+    "name": "NAV-AIDE Base Map",
+    "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+    "sources": {
+        "osm-raster": {
+            "type": "raster",
+            "tiles": [
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            ],
+            "tileSize": 256,
+            "attribution": "© OpenStreetMap contributors",
+            "minzoom": 0,
+            "maxzoom": 19
+        }
+    },
+    "layers": [
+        {
+            "id": "background",
+            "type": "background",
+            "paint": {
+                "background-color": "#f0ede6"
+            }
+        },
+        {
+            "id": "osm-tiles",
+            "type": "raster",
+            "source": "osm-raster",
+            "minzoom": 0,
+            "maxzoom": 19,
+            "paint": {
+                "raster-opacity": 0.85,
+                "raster-contrast": 0,
+                "raster-saturation": -0.15
+            }
+        }
+    ],
+    "center": [-0.1276, 51.5074],
+    "zoom": 11
 }

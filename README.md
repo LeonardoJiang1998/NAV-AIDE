@@ -257,11 +257,14 @@ These rules define the project's identity and must not be violated:
 
 ## Current Status
 
-- **4 screens complete and verified on the iPhone 16 Pro simulator (iOS 18.5)**: GO, LOST?, Maps, Settings
-- **Gemma inference verified on device (iPhone 12 Pro Max, iOS 26.3.1)**: three test queries produced valid structured JSON; intents `route`, `poi_lookup`, and destination-only routing all work. Wall-clock per query: 3–26 s on A14 Bionic CPU.
-- **Real London data end-to-end**: Heathrow T5 → Canary Wharf returns a 14-stop Elizabeth line path; Stratford → Wimbledon returns a 19-stop cross-London route; Waterloo → Baker Street returns a 5-station Jubilee path.
-- **Known runtime bug**: `react-native-sqlite-storage` hangs silently when opening the deployed `pois.db` / `location_aliases.db` from the iOS Documents container, so the UI currently falls back to fixture POIs. Tube routing is unaffected because the graph is a JSON asset loaded by Metro. See [NEXT_STEPS.md](NEXT_STEPS.md) for the fix plan.
-- **72/72 tests pass**, TypeScript compiles clean, both platform bundles succeed.
+- **4 screens complete and verified on the iPhone 16 Pro simulator (iOS 18.5)**: GO, LOST?, Maps, Settings.
+- **Rich journey narratives** — routes now describe specific TfL lines and interchanges, e.g. *"Start at Canary Wharf. Take the Elizabeth line 13 stops to Heathrow Terminals 2 & 3. Change to the Piccadilly line and ride 1 stop to Heathrow Terminal 5. Total travel time: 28 minutes."*
+- **Tube line map** renders the full 435-station network on MapLibre using official TfL Pantone colours. Interchange stations draw with a larger white dot; the legend lists every line; running a query on GO highlights the resolved path on the map.
+- **London city map** loads real OSM raster tiles for street context. An offline MBTiles pipeline for airplane-mode use is still pending (see [NEXT_STEPS.md](NEXT_STEPS.md)).
+- **Real London data end-to-end**: 435 TfL stations, 575 edges, 860 OSM POIs, 478 location aliases. After the `react-native-sqlite-storage` Documents-path fix landed, all of this now reaches the UI.
+- **Gemma inference verified on device (iPhone 12 Pro Max, iOS 26.3.1)**: wall-clock per query is 3–26 s on A14 Bionic CPU. A post-processing corrector catches Gemma 3 1B's occasional origin/destination flip.
+- **Remote control CLI**: `npm run ask "your query"` drives the running app via the Metro debugger, which is handy for scripted testing and automation.
+- **89+ tests pass**, TypeScript compiles clean, both platform bundles succeed.
 
 See [NEXT_STEPS.md](NEXT_STEPS.md) for the full roadmap and prioritised next tasks.
 

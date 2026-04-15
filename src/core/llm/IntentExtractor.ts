@@ -1,4 +1,5 @@
 import type { StructuredIntentModelAdapter } from '../runtime/ModelAdapterContracts';
+import { correctOriginDestinationOrder } from './IntentOrderCorrector';
 
 export type ExtractedIntentType = 'route' | 'nearest_station' | 'poi_lookup' | 'lost_help' | 'fare' | 'unknown';
 export type ExtractedLanguage = 'English' | 'Mandarin' | 'Spanish' | 'French' | 'Arabic' | 'Other';
@@ -44,7 +45,8 @@ export class IntentExtractor {
             schema: INTENT_EXTRACTION_SCHEMA,
         });
 
-        return validateIntentExtraction(result, rawQuery);
+        const validated = validateIntentExtraction(result, rawQuery);
+        return correctOriginDestinationOrder(validated);
     }
 
     private buildPrompt(rawQuery: string, knownStations: string[], fastPathHints: string[]): string {

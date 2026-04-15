@@ -34,9 +34,9 @@ const graph = {
         { id: 'canary-wharf', name: 'Canary Wharf' },
     ],
     edges: [
-        { from: 'waterloo', to: 'westminster', cost: 2 },
-        { from: 'westminster', to: 'green-park', cost: 2 },
-        { from: 'green-park', to: 'baker-street', cost: 4 },
+        { from: 'waterloo', to: 'westminster', cost: 2, lineId: 'jubilee' },
+        { from: 'westminster', to: 'green-park', cost: 2, lineId: 'jubilee' },
+        { from: 'green-park', to: 'baker-street', cost: 4, lineId: 'jubilee' },
     ],
 };
 

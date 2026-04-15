@@ -1,10 +1,28 @@
 import SQLite from 'react-native-sqlite-storage';
+import RNFS from 'react-native-fs';
 
 import type { EntityRecord, ResolvedEntityType } from '../../core/pipeline/EntityResolver';
 import type { POIRecord } from '../../core/poi/POIService';
 import type { SqliteAssetContract } from '../../core/runtime/OfflineRuntimeContracts';
 
 SQLite.enablePromise?.(true);
+
+/**
+ * react-native-sqlite-storage on iOS cannot open DB files via an absolute path.
+ * `openDatabase({ name: absolutePath, location: 'default' })` prepends the app
+ * Library directory to the already-absolute path and hangs with no error.
+ *
+ * The supported workaround is `createFromLocation` + `readOnly: true`:
+ *   - `createFromLocation` maps to native `assetFilename`.
+ *   - With a relative path (e.g. "data/pois.db"), the native code prepends the
+ *     Documents directory. So we rewrite the absolute path back into a
+ *     Documents-relative path, and keep the library-internal key stable by
+ *     using the trailing filename as `name`.
+ *
+ * If a caller passes an absolute path rooted elsewhere (Library, Caches, or
+ * app bundle), we fall back to treating the leaf basename as the DB name and
+ * the full path as the asset. That mirrors the library's `~`-prefix contract.
+ */
 
 interface SQLiteResultSet {
     rows: {
@@ -21,6 +39,10 @@ interface SQLiteDatabaseHandle {
 export interface SqliteValidationResult {
     tablesPresent: string[];
     ftsTablesPresent: string[];
+}
+
+function trimTrailingSlash(path: string): string {
+    return path.endsWith('/') ? path.slice(0, -1) : path;
 }
 
 export class ReactNativeSQLiteAdapter {
@@ -108,7 +130,30 @@ ORDER BY canonical_name;
     }
 
     private async openDatabase(absolutePath: string): Promise<SQLiteDatabaseHandle> {
-        return SQLite.openDatabase({ name: absolutePath, location: 'default', readOnly: true }) as Promise<SQLiteDatabaseHandle>;
+        const leafName = absolutePath.split('/').filter(Boolean).pop() ?? 'db.sqlite';
+        const docsRoot = trimTrailingSlash(RNFS.DocumentDirectoryPath);
+        let assetRelative: string;
+
+        if (absolutePath.startsWith('/') && docsRoot && absolutePath.startsWith(`${docsRoot}/`)) {
+            assetRelative = absolutePath.slice(docsRoot.length + 1);
+        } else {
+            // Not in Documents — fall back to the leaf filename. Native side will
+            // look for it inside Documents; make sure the caller has actually
+            // copied the file there before opening.
+            assetRelative = leafName;
+        }
+
+        const params: {
+            name: string;
+            readOnly: boolean;
+            createFromLocation: string;
+        } = {
+            name: leafName,
+            readOnly: true,
+            createFromLocation: assetRelative,
+        };
+
+        return SQLite.openDatabase(params) as Promise<SQLiteDatabaseHandle>;
     }
 
     private async tableExists(database: SQLiteDatabaseHandle, table: string): Promise<boolean> {

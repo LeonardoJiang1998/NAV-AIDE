@@ -4,6 +4,7 @@ import Tts from 'react-native-tts';
 
 import { RouteCard } from '../components/RouteCard';
 import { SectionCard } from '../components/SectionCard';
+import { StationSuggestions } from '../components/StationSuggestions';
 import { StatusChip } from '../components/StatusChip';
 import { SystemAlertsCard } from '../components/SystemAlertsCard';
 import { DownloadScreen } from '../download/DownloadScreen';
@@ -13,6 +14,29 @@ import { useSpeechToText } from '../voice/useSpeechToText';
 import { shellStyles } from './shared';
 
 const transportModes = ['Tube', 'Walk', 'Mixed'];
+
+const QUICK_QUERIES = [
+    'How do I get from Waterloo to Baker Street?',
+    'Heathrow Terminal 5 to Canary Wharf',
+    'Stratford to Wimbledon',
+    'Find the British Museum',
+    "Where's Hampstead?",
+];
+
+/**
+ * When the user taps a suggested station, update the query in-place so the
+ * natural-language prompt stays grammatical. We replace the text after the
+ * last "to" / "from" clause, or append to the end if neither is present.
+ */
+function rewriteQueryWithStation(query: string, station: string): string {
+    const trimmed = query.trim();
+    if (!trimmed) return station;
+    const toMatch = trimmed.match(/(.*\bto\s+)([^?\n]+?)(\??)$/i);
+    if (toMatch) return `${toMatch[1]}${station}${toMatch[3]}`;
+    const fromMatch = trimmed.match(/(.*\bfrom\s+)([^?\n]+?)(\s+to\s+.*|$)/i);
+    if (fromMatch) return `${fromMatch[1]}${station}${fromMatch[3]}`;
+    return `${trimmed}${/\s$/.test(trimmed) ? '' : ' '}${station}`;
+}
 
 interface FlowAlert {
     label: string;
@@ -35,7 +59,7 @@ function mapPipelineError(error: unknown): FlowAlert {
 }
 
 export function GoScreen(): React.JSX.Element {
-    const { assetStatus, assetDiagnostics, demoReadiness, modelStatus, permissions, preferences, runtimeState, voiceCapabilities, stagedDestination, clearStagedDestination, enqueueFeedback, mobilePipeline } = useAppShell();
+    const { assetStatus, assetDiagnostics, demoReadiness, modelStatus, permissions, preferences, runtimeState, voiceCapabilities, stagedDestination, clearStagedDestination, enqueueFeedback, mobilePipeline, setLastRoute } = useAppShell();
     const [query, setQuery] = useState('How do I get from Waterloo to Baker Street?');
     const [transportMode, setTransportMode] = useState('Tube');
     const [resultText, setResultText] = useState<string | null>(null);
@@ -116,6 +140,17 @@ export function GoScreen(): React.JSX.Element {
                 setFlowAlert({ label: 'fixture fallback active', detail: runtimeState.reasons.join(' '), tone: 'warn' });
             }
 
+            // Share the resolved route with the Maps tab so the tube map can
+            // draw it as a highlighted path.
+            if (pipelineResult.route && pipelineResult.origin?.bestCandidate && pipelineResult.destination?.bestCandidate) {
+                setLastRoute({
+                    path: pipelineResult.route.path,
+                    originName: pipelineResult.origin.bestCandidate.entity.canonicalName,
+                    destinationName: pipelineResult.destination.bestCandidate.entity.canonicalName,
+                    cost: pipelineResult.route.cost,
+                });
+            }
+
             clearStagedDestination();
         } catch (error) {
             setFlowAlert(mapPipelineError(error));
@@ -186,12 +221,35 @@ export function GoScreen(): React.JSX.Element {
                 <Text style={shellStyles.copy}>Demo readiness: {demoReadiness.readyForInternalDemo ? 'device-backed' : 'fallback-visible'}.</Text>
             </SectionCard>
             <SectionCard>
-                <Text style={styles.sectionTitle}>Search</Text>
-                <TextInput value={query} onChangeText={setQuery} style={styles.input} placeholder="Enter a route or place query" placeholderTextColor="#7c8a85" />
+                <Text style={styles.sectionTitle}>Plan a journey</Text>
+                <Text style={shellStyles.copy}>
+                    Ask in natural language, tap a suggested station, or pick a common route. Everything runs on-device.
+                </Text>
+                <TextInput
+                    value={query}
+                    onChangeText={setQuery}
+                    style={styles.input}
+                    placeholder="e.g. How do I get from Waterloo to Baker Street?"
+                    placeholderTextColor="#7c8a85"
+                    multiline
+                />
+                <StationSuggestions
+                    stations={mobilePipeline.knownStations}
+                    query={query}
+                    onPick={(station) => {
+                        setQuery((current) => rewriteQueryWithStation(current, station));
+                    }}
+                />
                 <View style={styles.transportRow}>
                     {transportModes.map((mode) => (
-                        <Pressable key={mode} onPress={() => setTransportMode(mode)} style={[styles.transportPill, transportMode === mode ? styles.transportPillActive : null]}>
-                            <Text style={transportMode === mode ? styles.transportTextActive : styles.transportText}>{mode}</Text>
+                        <Pressable
+                            key={mode}
+                            onPress={() => setTransportMode(mode)}
+                            style={[styles.transportPill, transportMode === mode ? styles.transportPillActive : null]}
+                        >
+                            <Text style={transportMode === mode ? styles.transportTextActive : styles.transportText}>
+                                {mode}
+                            </Text>
                         </Pressable>
                     ))}
                 </View>
@@ -199,16 +257,35 @@ export function GoScreen(): React.JSX.Element {
                     <Pressable onPress={() => void runQuery()} style={styles.primaryButton}>
                         <Text style={styles.primaryButtonText}>Run search</Text>
                     </Pressable>
-                    <Pressable onPress={() => void toggleVoiceSearch()} style={stt.isListening ? styles.primaryButton : styles.secondaryButton}>
-                        <Text style={stt.isListening ? styles.primaryButtonText : styles.secondaryButtonText}>{stt.isListening ? 'Stop listening' : 'Voice search'}</Text>
+                    <Pressable
+                        onPress={() => void toggleVoiceSearch()}
+                        style={stt.isListening ? styles.primaryButton : styles.secondaryButton}
+                    >
+                        <Text style={stt.isListening ? styles.primaryButtonText : styles.secondaryButtonText}>
+                            {stt.isListening ? 'Stop listening' : 'Voice search'}
+                        </Text>
                     </Pressable>
                     <Pressable onPress={() => void playVoice()} style={styles.secondaryButton}>
                         <Text style={styles.secondaryButtonText}>Play TTS</Text>
                     </Pressable>
                 </View>
-                {stt.isListening ? <Text style={shellStyles.copy}>Listening...</Text> : null}
+                {stt.isListening ? <Text style={shellStyles.copy}>Listening…</Text> : null}
                 {stt.partialTranscript ? <Text style={shellStyles.copy}>Hearing: {stt.partialTranscript}</Text> : null}
-                {!voiceCapabilities?.stt ? <Text style={shellStyles.copy}>STT did not validate on this device check. Text entry remains the safe demo path.</Text> : null}
+                {!voiceCapabilities?.stt ? (
+                    <Text style={shellStyles.copy}>
+                        STT did not validate on this device check. Text entry remains the safe demo path.
+                    </Text>
+                ) : null}
+                <View style={styles.quickActions}>
+                    <Text style={styles.quickHeader}>Quick examples</Text>
+                    <View style={styles.quickRow}>
+                        {QUICK_QUERIES.map((preset) => (
+                            <Pressable key={preset} onPress={() => setQuery(preset)} style={styles.quickPill}>
+                                <Text style={styles.quickPillText}>{preset}</Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                </View>
             </SectionCard>
             {flowAlert ? (
                 <SectionCard>
@@ -321,5 +398,34 @@ const styles = StyleSheet.create({
     secondaryButtonText: {
         color: colors.ink,
         fontWeight: '700',
+    },
+    quickActions: {
+        gap: 6,
+        marginTop: 4,
+    },
+    quickHeader: {
+        color: '#4b5b57',
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 0.8,
+        textTransform: 'uppercase',
+    },
+    quickRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    quickPill: {
+        backgroundColor: '#fffaf1',
+        borderColor: colors.line,
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+    },
+    quickPillText: {
+        color: colors.ink,
+        fontSize: 12,
+        fontWeight: '600',
     },
 });
