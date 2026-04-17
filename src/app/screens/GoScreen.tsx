@@ -137,9 +137,9 @@ export function GoScreen(): React.JSX.Element {
                 });
             } else if (pipelineResult.status === 'unresolved') {
                 setFlowAlert({
-                    label: 'no route found',
+                    label: 'not understood',
                     detail:
-                        'We could not find a tube route for this query. Try "<station> to <station>" or ask about a tourist landmark like "Take me to the British Museum".',
+                        'Try "<station> to <station>", "Take me to <landmark>", or "From <station>". Tap any example chip below to see the format.',
                     tone: 'bad',
                 });
             }
