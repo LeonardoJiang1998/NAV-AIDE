@@ -514,9 +514,17 @@ export class QueryPipeline {
             maxAgeMs: 5 * 60 * 1000,
         });
 
+        const entity = resolution.bestCandidate.entity;
+        const summary =
+            extraction.intent === 'lost_help'
+                ? `Found you at ${entity.canonicalName}. Tell me where you'd like to go next.`
+                : entity.type === 'station'
+                    ? `${entity.canonicalName} is a tube station in the offline index.`
+                    : `Found ${entity.canonicalName} in the offline index.`;
+
         const rendered = await this.dependencies.responseRenderer.render({
             intent: extraction.intent,
-            summary: `${extraction.intent} match at ${resolution.bestCandidate.entity.canonicalName}.`,
+            summary,
             allowedPlaceNames,
         });
 

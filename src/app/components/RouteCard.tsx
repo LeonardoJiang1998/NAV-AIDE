@@ -13,11 +13,12 @@ export function RouteCard({ result }: { result: QueryPipelineResult }): React.JS
     const walking = result.walking;
     const totalStops = segments.reduce((acc, seg) => acc + Math.max(0, seg.stations.length - 1), 0);
     const interchanges = Math.max(0, segments.length - 1);
+    const title = buildCardTitle(result, segments.length, walking);
 
     return (
         <SectionCard style={styles.card}>
             <View style={styles.headerRow}>
-                <Text style={styles.title}>Journey</Text>
+                <Text style={styles.title}>{title}</Text>
                 <StatusChip
                     label={result.status.replace('_', ' ')}
                     tone={statusTone(result.status)}
@@ -130,6 +131,18 @@ function SummaryMetric({ label, value }: { label: string; value: string }): Reac
             <Text style={styles.metricLabel}>{label}</Text>
         </View>
     );
+}
+
+function buildCardTitle(
+    result: QueryPipelineResult,
+    segmentCount: number,
+    walking: QueryPipelineResult['walking'],
+): string {
+    if (result.route && segmentCount > 0) return 'Journey';
+    if (walking && walking.status === 'ok') return 'Walking preview';
+    if (result.origin?.bestCandidate && !result.destination) return 'Starting point';
+    if (result.destination?.bestCandidate && !result.origin) return 'Destination';
+    return 'Result';
 }
 
 function statusTone(status: string): 'good' | 'warn' | 'bad' {

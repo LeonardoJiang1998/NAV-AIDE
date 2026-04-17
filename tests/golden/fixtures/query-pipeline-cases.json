@@ -97,7 +97,7 @@
         },
         "expectedStatus": "complete",
         "expectedIntent": "nearest_station",
-        "expectedRenderedText": "nearest_station match at Green Park.",
+        "expectedRenderedText": "Green Park is a tube station in the offline index.",
         "expectedDisruptionIds": [
             "station-green-park"
         ],
@@ -120,7 +120,7 @@
         },
         "expectedStatus": "complete",
         "expectedIntent": "lost_help",
-        "expectedRenderedText": "lost_help match at Baker Street.",
+        "expectedRenderedText": "Found you at Baker Street. Tell me where you'd like to go next.",
         "expectedDisruptionIds": [
             "line-jubilee-baker-street"
         ],
@@ -225,7 +225,7 @@
         },
         "expectedStatus": "complete",
         "expectedIntent": "nearest_station",
-        "expectedRenderedText": "nearest_station match at Westminster.",
+        "expectedRenderedText": "Westminster is a tube station in the offline index.",
         "expectedOriginStatus": "resolved",
         "expectedWalkingStatus": null,
         "allowedPlaceNames": [
