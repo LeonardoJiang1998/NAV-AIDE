@@ -299,6 +299,49 @@
         ]
     },
     {
+        "id": "destination-preview-station-only",
+        "rawQuery": "Take me to Baker Street",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": null,
+            "destination": "Baker Street",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "complete",
+        "expectedIntent": "route",
+        "expectedRenderedText": "Baker Street is your destination. Tell me your starting station for tube directions.",
+        "expectedRouteCost": null,
+        "expectedDestinationStatus": "resolved",
+        "expectedDisruptionIds": [
+            "line-jubilee-baker-street"
+        ],
+        "allowedPlaceNames": [
+            "Baker Street"
+        ]
+    },
+    {
+        "id": "origin-preview-waterloo",
+        "rawQuery": "From Waterloo",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": null,
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "complete",
+        "expectedIntent": "route",
+        "expectedRenderedText": "You're starting from Waterloo. Tell me where you'd like to go.",
+        "expectedRouteCost": null,
+        "expectedOriginStatus": "resolved",
+        "allowedPlaceNames": [
+            "Waterloo"
+        ]
+    },
+    {
         "id": "route-walking-unavailable",
         "rawQuery": "Walk from Westminster to Green Park",
         "extraction": {

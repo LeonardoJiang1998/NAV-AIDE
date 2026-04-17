@@ -75,8 +75,19 @@ export class RuleBasedStructuredModelClient implements StructuredIntentModelAdap
             if (stationMatches.length >= 2) {
                 origin = stationMatches[0] ?? null;
                 destination = stationMatches[1] ?? null;
+            } else if (stationMatches.length === 1) {
+                // Single station — assign to origin or destination based on
+                // context words around it. "From Waterloo" → origin. "Take me
+                // to Baker Street" / "To Baker Street" → destination.
+                const hasFrom = /\bfrom\b/i.test(rawQuery);
+                const hasTo = /\bto\b/i.test(rawQuery);
+                if (hasFrom && !hasTo) {
+                    origin = stationMatches[0];
+                } else {
+                    destination = stationMatches[0];
+                }
             } else {
-                destination = stationMatches[0] ?? rawQuery.split(/to| a |الى|إلى/i).pop()?.trim() ?? null;
+                destination = rawQuery.split(/to| a |الى|إلى/i).pop()?.trim() ?? null;
             }
         }
 

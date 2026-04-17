@@ -118,15 +118,15 @@ export class QueryPipeline {
             };
         }
 
-        // "Take me to X" with no origin: if X resolved to a POI, give a
-        // destination preview (nearest station + walking leg). The user can
-        // re-ask with a starting point to get full tube directions.
-        if (
-            !originResolved.endpoint &&
-            destinationResolved.endpoint &&
-            destinationResolved.endpoint.poiName
-        ) {
+        // Partial-query preview: the user gave just a destination or just an
+        // origin. Return a useful nudge instead of a dead-end "unresolved"
+        // error. If the destination is a POI, the preview includes a walking
+        // leg from the nearest station.
+        if (!originResolved.endpoint && destinationResolved.endpoint) {
             return this.handleDestinationPreview(extraction, fastPathHints, destinationResolved);
+        }
+        if (originResolved.endpoint && !destinationResolved.endpoint) {
+            return this.handleOriginPreview(extraction, fastPathHints, originResolved);
         }
 
         if (!originResolved.endpoint || !destinationResolved.endpoint) {
@@ -285,25 +285,32 @@ export class QueryPipeline {
     ): Promise<QueryPipelineResult> {
         const endpoint = destinationResolved.endpoint!;
         const stationName = endpoint.stationEntity.canonicalName;
-        const poiName = endpoint.poiName!;
+        const poiName = endpoint.poiName;
 
-        const walking = await this.dependencies.walkingRouter.route({
-            originName: stationName,
-            destinationName: poiName,
-        });
+        const allowedPlaceNames: string[] = [stationName];
+        let walking: WalkingRouteResult | undefined;
+        let summary: string;
 
-        const allowedPlaceNames = [stationName, poiName];
+        if (poiName) {
+            walking = await this.dependencies.walkingRouter.route({
+                originName: stationName,
+                destinationName: poiName,
+            });
+            allowedPlaceNames.push(poiName);
+            summary =
+                walking.status === 'ok'
+                    ? `${poiName} is closest to ${stationName} — about ${this.formatMeters(
+                        walking.distanceMeters,
+                    )} (~${walking.durationMinutes} min) walk. Tell me your starting station for full tube directions.`
+                    : `${poiName} is closest to ${stationName}. Tell me your starting station for full tube directions.`;
+        } else {
+            summary = `${stationName} is your destination. Tell me your starting station for tube directions.`;
+        }
+
         const disruptions = await this.dependencies.disruptionService.getDisruptions(allowedPlaceNames, {
-            key: `destination-preview:${endpoint.stationEntity.id}:${poiName}`,
+            key: `destination-preview:${endpoint.stationEntity.id}:${poiName ?? 'station-only'}`,
             maxAgeMs: 5 * 60 * 1000,
         });
-
-        const summary =
-            walking.status === 'ok'
-                ? `${poiName} is closest to ${stationName} — about ${this.formatMeters(
-                    walking.distanceMeters,
-                )} (~${walking.durationMinutes} min) walk. Tell me your starting station for full tube directions.`
-                : `${poiName} is closest to ${stationName}. Tell me your starting station for full tube directions.`;
 
         const rendered = await this.dependencies.responseRenderer.render({
             intent: extraction.intent,
@@ -319,6 +326,42 @@ export class QueryPipeline {
             route: null,
             tubeSegments: [],
             walking,
+            disruptions,
+            rendered,
+        };
+    }
+
+    private async handleOriginPreview(
+        extraction: IntentExtraction,
+        fastPathHints: string[],
+        originResolved: { resolution: ResolutionResult | undefined; endpoint: RouteEndpoint | null },
+    ): Promise<QueryPipelineResult> {
+        const endpoint = originResolved.endpoint!;
+        const stationName = endpoint.stationEntity.canonicalName;
+        const poiName = endpoint.poiName;
+
+        const allowedPlaceNames: string[] = poiName ? [stationName, poiName] : [stationName];
+        const disruptions = await this.dependencies.disruptionService.getDisruptions(allowedPlaceNames, {
+            key: `origin-preview:${endpoint.stationEntity.id}:${poiName ?? 'station-only'}`,
+            maxAgeMs: 5 * 60 * 1000,
+        });
+
+        const label = poiName ? `${poiName} (near ${stationName})` : stationName;
+        const summary = `You're starting from ${label}. Tell me where you'd like to go.`;
+
+        const rendered = await this.dependencies.responseRenderer.render({
+            intent: extraction.intent,
+            summary,
+            allowedPlaceNames,
+        });
+
+        return {
+            status: 'complete',
+            extraction,
+            fastPathHints,
+            origin: originResolved.resolution,
+            route: null,
+            tubeSegments: [],
             disruptions,
             rendered,
         };

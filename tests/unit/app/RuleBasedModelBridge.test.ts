@@ -30,3 +30,21 @@ test('RuleBasedStructuredModelClient extracts destination-only POI without origi
     assert.equal(result.destination, 'the British Museum');
     assert.equal(result.requiresDisambiguation, false);
 });
+
+test('RuleBasedStructuredModelClient assigns single station to origin for "From X" queries', async () => {
+    const client = new RuleBasedStructuredModelClient(['Waterloo', 'Baker Street', 'Green Park']);
+    const result = await client.generateStructured<any>({ prompt: 'User query: From Waterloo', schema: {} });
+
+    assert.equal(result.intent, 'route');
+    assert.equal(result.origin, 'Waterloo');
+    assert.equal(result.destination, null);
+});
+
+test('RuleBasedStructuredModelClient assigns single station to destination for "Take me to X" queries', async () => {
+    const client = new RuleBasedStructuredModelClient(['Waterloo', 'Baker Street', 'Green Park']);
+    const result = await client.generateStructured<any>({ prompt: 'User query: Take me to Baker Street', schema: {} });
+
+    assert.equal(result.intent, 'route');
+    assert.equal(result.origin, null);
+    assert.equal(result.destination, 'Baker Street');
+});
