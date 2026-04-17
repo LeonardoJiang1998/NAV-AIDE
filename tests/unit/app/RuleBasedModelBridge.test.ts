@@ -20,3 +20,13 @@ test('RuleBasedStructuredModelClient keeps Park ambiguous', async () => {
     assert.equal(result.destination, 'Park');
     assert.equal(result.requiresDisambiguation, true);
 });
+
+test('RuleBasedStructuredModelClient extracts destination-only POI without origin', async () => {
+    const client = new RuleBasedStructuredModelClient(['Waterloo', 'Baker Street', 'Green Park']);
+    const result = await client.generateStructured<any>({ prompt: 'User query: Take me to the British Museum', schema: {} });
+
+    assert.equal(result.intent, 'route');
+    assert.equal(result.origin, null);
+    assert.equal(result.destination, 'the British Museum');
+    assert.equal(result.requiresDisambiguation, false);
+});

@@ -19,10 +19,28 @@ const entities: EntityRecord[] = [
     { id: 'baker-street', canonicalName: 'Baker Street', type: 'station', aliases: [] },
     { id: 'canary-wharf', canonicalName: 'Canary Wharf', type: 'station', aliases: [] },
     { id: 'british-museum', canonicalName: 'British Museum', type: 'poi', aliases: ['The British Museum'] },
+    { id: 'london-eye', canonicalName: 'London Eye', type: 'poi', aliases: ['The London Eye'] },
 ];
 
 const pois: POIRecord[] = [
-    { id: 'british-museum', canonicalName: 'British Museum', category: 'museum', aliases: ['The British Museum'] },
+    {
+        id: 'british-museum',
+        canonicalName: 'British Museum',
+        category: 'museum',
+        aliases: ['The British Museum'],
+        latitude: 51.5235,
+        longitude: -0.1571,
+        nearestStation: 'Baker Street',
+    },
+    {
+        id: 'london-eye',
+        canonicalName: 'London Eye',
+        category: 'landmark',
+        aliases: ['The London Eye'],
+        latitude: 51.5041,
+        longitude: -0.1115,
+        nearestStation: 'Waterloo',
+    },
 ];
 
 const graph = {

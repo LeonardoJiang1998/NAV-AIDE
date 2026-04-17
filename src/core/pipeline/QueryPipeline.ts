@@ -118,6 +118,17 @@ export class QueryPipeline {
             };
         }
 
+        // "Take me to X" with no origin: if X resolved to a POI, give a
+        // destination preview (nearest station + walking leg). The user can
+        // re-ask with a starting point to get full tube directions.
+        if (
+            !originResolved.endpoint &&
+            destinationResolved.endpoint &&
+            destinationResolved.endpoint.poiName
+        ) {
+            return this.handleDestinationPreview(extraction, fastPathHints, destinationResolved);
+        }
+
         if (!originResolved.endpoint || !destinationResolved.endpoint) {
             return {
                 status: 'unresolved',
@@ -267,6 +278,52 @@ export class QueryPipeline {
         return { resolution, endpoint: null };
     }
 
+    private async handleDestinationPreview(
+        extraction: IntentExtraction,
+        fastPathHints: string[],
+        destinationResolved: { resolution: ResolutionResult | undefined; endpoint: RouteEndpoint | null },
+    ): Promise<QueryPipelineResult> {
+        const endpoint = destinationResolved.endpoint!;
+        const stationName = endpoint.stationEntity.canonicalName;
+        const poiName = endpoint.poiName!;
+
+        const walking = await this.dependencies.walkingRouter.route({
+            originName: stationName,
+            destinationName: poiName,
+        });
+
+        const allowedPlaceNames = [stationName, poiName];
+        const disruptions = await this.dependencies.disruptionService.getDisruptions(allowedPlaceNames, {
+            key: `destination-preview:${endpoint.stationEntity.id}:${poiName}`,
+            maxAgeMs: 5 * 60 * 1000,
+        });
+
+        const summary =
+            walking.status === 'ok'
+                ? `${poiName} is closest to ${stationName} — about ${this.formatMeters(
+                    walking.distanceMeters,
+                )} (~${walking.durationMinutes} min) walk. Tell me your starting station for full tube directions.`
+                : `${poiName} is closest to ${stationName}. Tell me your starting station for full tube directions.`;
+
+        const rendered = await this.dependencies.responseRenderer.render({
+            intent: extraction.intent,
+            summary,
+            allowedPlaceNames,
+        });
+
+        return {
+            status: 'complete',
+            extraction,
+            fastPathHints,
+            destination: destinationResolved.resolution,
+            route: null,
+            tubeSegments: [],
+            walking,
+            disruptions,
+            rendered,
+        };
+    }
+
     private async resolveWalkingLeg(
         origin: RouteEndpoint,
         destination: RouteEndpoint,
@@ -340,15 +397,44 @@ export class QueryPipeline {
             return { status: 'unresolved', extraction, fastPathHints, poiResults, disruptions: [], rendered: null };
         }
 
+        const topPoi = poiResults[0].poi;
         const allowedPlaceNames = poiResults.map((result) => result.poi.canonicalName);
+
+        // If the top POI has a nearestStation, enrich the response with a
+        // walking leg from that station. Same shape as the destination preview
+        // path — a "Find the British Museum" query should give the user the
+        // same useful answer as "Take me to the British Museum".
+        let walking: WalkingRouteResult | undefined;
+        let stationName: string | undefined;
+        if (topPoi.nearestStation) {
+            const stationResolution = this.dependencies.entityResolver.resolve(topPoi.nearestStation);
+            if (stationResolution.bestCandidate?.entity.type === 'station') {
+                stationName = stationResolution.bestCandidate.entity.canonicalName;
+                walking = await this.dependencies.walkingRouter.route({
+                    originName: stationName,
+                    destinationName: topPoi.canonicalName,
+                });
+                if (!allowedPlaceNames.includes(stationName)) allowedPlaceNames.push(stationName);
+            }
+        }
+
         const disruptions = await this.dependencies.disruptionService.getDisruptions(allowedPlaceNames, {
             key: `poi:${allowedPlaceNames.join('|')}`,
             maxAgeMs: 5 * 60 * 1000,
         });
 
+        const summary =
+            stationName && walking?.status === 'ok'
+                ? `${topPoi.canonicalName} is closest to ${stationName} — about ${this.formatMeters(
+                    walking.distanceMeters,
+                )} (~${walking.durationMinutes} min) walk. Tell me your starting station for full tube directions.`
+                : stationName
+                    ? `${topPoi.canonicalName} is closest to ${stationName}. Tell me your starting station for full tube directions.`
+                    : `POI match: ${topPoi.canonicalName}.`;
+
         const rendered = await this.dependencies.responseRenderer.render({
             intent: extraction.intent,
-            summary: `POI match: ${poiResults[0]?.poi.canonicalName}.`,
+            summary,
             allowedPlaceNames,
         });
 
@@ -357,6 +443,7 @@ export class QueryPipeline {
             extraction,
             fastPathHints,
             poiResults,
+            walking,
             disruptions,
             rendered,
         };

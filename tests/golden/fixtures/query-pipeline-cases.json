@@ -70,16 +70,18 @@
         },
         "expectedStatus": "complete",
         "expectedIntent": "poi_lookup",
-        "expectedRenderedText": "POI match: British Museum.",
+        "expectedRenderedText": "British Museum is closest to Baker Street — about 120 m (~2 min) walk. Tell me your starting station for full tube directions.",
         "expectedPoiNames": [
             "British Museum"
         ],
         "expectedDisruptionIds": [
+            "line-jubilee-baker-street",
             "poi-british-museum"
         ],
-        "expectedWalkingStatus": null,
+        "expectedWalkingStatus": "ok",
         "allowedPlaceNames": [
-            "British Museum"
+            "British Museum",
+            "Baker Street"
         ]
     },
     {
@@ -246,6 +248,55 @@
         "expectedRenderedText": null,
         "expectedWalkingStatus": null,
         "allowedPlaceNames": []
+    },
+    {
+        "id": "route-same-station-poi-london-eye",
+        "rawQuery": "Waterloo to the London Eye",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": "Waterloo",
+            "destination": "the London Eye",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "complete",
+        "expectedIntent": "route",
+        "expectedRenderedText": "Waterloo is the nearest station to London Eye. Walk approximately 120 m (~2 min) from the station to London Eye.",
+        "expectedRouteCost": 0,
+        "expectedWalkingStatus": "ok",
+        "expectedOriginStatus": "resolved",
+        "expectedDestinationStatus": "resolved",
+        "allowedPlaceNames": [
+            "Waterloo",
+            "London Eye"
+        ]
+    },
+    {
+        "id": "destination-preview-british-museum",
+        "rawQuery": "Take me to the British Museum",
+        "extraction": {
+            "detectedLanguage": "English",
+            "intent": "route",
+            "origin": null,
+            "destination": "the British Museum",
+            "poiQuery": null,
+            "requiresDisambiguation": false
+        },
+        "expectedStatus": "complete",
+        "expectedIntent": "route",
+        "expectedRenderedText": "British Museum is closest to Baker Street — about 120 m (~2 min) walk. Tell me your starting station for full tube directions.",
+        "expectedRouteCost": null,
+        "expectedWalkingStatus": "ok",
+        "expectedDestinationStatus": "resolved",
+        "expectedDisruptionIds": [
+            "line-jubilee-baker-street",
+            "poi-british-museum"
+        ],
+        "allowedPlaceNames": [
+            "Baker Street",
+            "British Museum"
+        ]
     },
     {
         "id": "route-walking-unavailable",
