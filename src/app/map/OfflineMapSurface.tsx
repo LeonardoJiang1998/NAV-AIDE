@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
 
+import { buildMapStyle } from './buildMapStyle';
 import { colors } from '../theme';
 
 export interface OfflineMapSurfaceProps {
@@ -12,6 +13,12 @@ export interface OfflineMapSurfaceProps {
     showWalking: boolean;
     selectedLabel?: string | null;
     selectedCoordinate?: [number, number] | null;
+    /**
+     * Absolute `file://` prefix where the extracted raster tiles live. If
+     * unset or null, the map falls back to OSM raster over HTTPS (which works
+     * online but doesn't satisfy the "airplane mode" promise).
+     */
+    localTilesPrefix?: string | null;
 }
 
 const DEFAULT_CENTER: [number, number] = [-0.1276, 51.5072];
@@ -24,10 +31,20 @@ export function OfflineMapSurface({
     showWalking,
     selectedLabel = null,
     selectedCoordinate = null,
+    localTilesPrefix = null,
 }: OfflineMapSurfaceProps): React.JSX.Element {
     const [centerCoordinate, setCenterCoordinate] = useState<[number, number]>(DEFAULT_CENTER);
     const [zoomLevel, setZoomLevel] = useState(11);
     const [lastPressedCoordinate, setLastPressedCoordinate] = useState<[number, number] | null>(null);
+
+    // Build the style JSON once per localTilesPrefix change. MapLibre's
+    // `styleJSON` prop accepts a stringified style and re-evaluates when it
+    // changes, so flipping on/off tiles at runtime works without a full map
+    // tear-down.
+    const styleJSON = useMemo(
+        () => JSON.stringify(buildMapStyle({ localTilesPrefix })),
+        [localTilesPrefix],
+    );
 
     useEffect(() => {
         if (selectedCoordinate) {
@@ -51,7 +68,7 @@ export function OfflineMapSurface({
             <View style={styles.mapShell}>
                 <MapLibreGL.MapView
                     style={StyleSheet.absoluteFill}
-                    styleURL="asset://styles/offline-style.json"
+                    mapStyle={styleJSON}
                     onPress={(event: { geometry?: { coordinates?: [number, number] } }) => {
                         if (event.geometry?.coordinates) {
                             setLastPressedCoordinate(event.geometry.coordinates);

@@ -57,3 +57,6 @@ temp/
 assets/data/*.db
 *.db-shm
 *.db-wal
+# MBTiles build scratch (tiles are regenerated from build-london-mbtiles.mjs)
+scripts/data-pipeline/tfl-source/osm-tile-cache/
+

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import RNFS from 'react-native-fs';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { CollapsibleCard } from '../components/CollapsibleCard';
@@ -19,6 +20,30 @@ export function MapsScreen(): React.JSX.Element {
     const [showWalking, setShowWalking] = useState(false);
     const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
     const [activeMap, setActiveMap] = useState<'tube' | 'city'>('tube');
+    const [localTilesPrefix, setLocalTilesPrefix] = useState<string | null>(null);
+
+    // Probe for offline-extracted raster tiles in the app's Documents
+    // directory. If present, we'll swap the map style to use `file://` URLs
+    // instead of OSM over HTTPS — the whole point of the offline-first promise.
+    useEffect(() => {
+        let cancelled = false;
+        const probe = async () => {
+            const tilesRoot = `${RNFS.DocumentDirectoryPath}/map-tiles`;
+            // Sentinel file: a Central London tile that's always present in
+            // our shipped extraction (see build-london-mbtiles.mjs). Any one
+            // tile is enough to confirm the directory tree landed.
+            const sentinel = `${tilesRoot}/13/4093/2723.png`;
+            try {
+                const present = await RNFS.exists(sentinel);
+                if (cancelled) return;
+                setLocalTilesPrefix(present ? `file://${tilesRoot}` : null);
+            } catch {
+                if (!cancelled) setLocalTilesPrefix(null);
+            }
+        };
+        void probe();
+        return () => { cancelled = true; };
+    }, [assetStatus]);
 
     const selectedCoordinate = selectedDestination
         ? ([sampleDestinationPins[selectedDestination].longitude, sampleDestinationPins[selectedDestination].latitude] as [number, number])
@@ -84,6 +109,7 @@ export function MapsScreen(): React.JSX.Element {
                         showWalking={showWalking}
                         selectedLabel={selectedDestination}
                         selectedCoordinate={selectedCoordinate}
+                        localTilesPrefix={localTilesPrefix}
                     />
                 </SectionCard>
             )}
