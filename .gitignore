@@ -60,3 +60,6 @@ assets/data/*.db
 # MBTiles build scratch (tiles are regenerated from build-london-mbtiles.mjs)
 scripts/data-pipeline/tfl-source/osm-tile-cache/
 
+
+# Local Claude Code settings (per-user)
+.claude/settings.local.json
