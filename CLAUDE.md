@@ -107,6 +107,10 @@ GO | LOST? | Maps | Settings — bottom tab navigation via `@react-navigation/bo
 - ES modules (`"type": "module"` in package.json).
 - Node 20+ required.
 
+## Coding guidelines
+
+The `karpathy-guidelines` skill (vendored at `.claude/skills/karpathy-guidelines/SKILL.md`, pinned via `SOURCE.md`) applies to every code change in this repo. It covers four behaviours: Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution. Claude Code auto-loads it for any session here.
+
 ## Path-specific instructions
 
 - Mobile code (`src/`, `tests/`, `scripts/`, `assets/`): also follow `.github/instructions/mobile.instructions.md`
