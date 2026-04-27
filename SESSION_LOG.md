@@ -67,3 +67,16 @@ Build clean · 108 tests pass.
 Build clean · 108 tests pass · Regression check: "Waterloo to Baker Street" still routes to 8-min Jubilee path with full station list.
 
 Screenshots: `SESSION_NOTES/iter3-{go-fresh,lost}.png`.
+
+### Iteration 4 (02:30 → 02:33 BST)
+
+**Bus routes surfaced on Maps.** New `BusRoutesList` component:
+- Splits the 29 seeded routes into Daytime (22) and Night Bus (7).
+- Renders TfL-style red chips for day routes, navy for night.
+- Tap a route number to expand the stop list; tap a stop to stage it for GO.
+- Wired into `MapsScreen` as a `CollapsibleCard` so the map stays the focus.
+- Full a11y annotations on the chips.
+
+Build clean.
+
+Screenshot: `SESSION_NOTES/iter4-maps-buses.png` (bus card is below the fold; collapsed by default).

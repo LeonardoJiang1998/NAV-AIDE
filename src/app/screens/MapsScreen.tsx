@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import RNFS from 'react-native-fs';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { BusRoutesList } from '../components/BusRoutesList';
 import { CollapsibleCard } from '../components/CollapsibleCard';
 import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
@@ -172,6 +173,19 @@ export function MapsScreen(): React.JSX.Element {
                     </View>
                 </SectionCard>
             ) : null}
+
+            {/* Bus routes — collapsed so the map stays the focus */}
+            <CollapsibleCard
+                title="Bus routes"
+                subtitle="29 tourist routes · tap to explore stops"
+            >
+                <BusRoutesList
+                    onStopPress={(stop) => {
+                        setSelectedDestination(stop);
+                        stageDestination(stop);
+                    }}
+                />
+            </CollapsibleCard>
 
             {/* Collapsed diagnostics */}
             <CollapsibleCard
