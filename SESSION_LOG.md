@@ -126,3 +126,18 @@ Both still produce identical output: same Jubilee narrative, same POI walking pr
 6 new unit tests for FastFirstStructuredIntentAdapter cover: confident pass-through, destination-only pass-through, unknown→LLM, no-endpoint→LLM, LLM-error fallback, poi_lookup-empty→LLM. Total tests now 114.
 
 Build clean.
+
+### Iteration 7 (02:43 → 02:50 BST) — rule-extractor word-boundary fix
+
+Found via the diverse-phrasings smoke battery:
+- "Show me the route to Tower of London" → destination came out as `"wer of London"` because the destination-tail split regex matched `to` inside `Tower`.
+- "How do I get to Buckingham Palace?" → trailing `?` leaked into the destination string.
+
+Fix: word-boundary the English splitter (`\bto\b`) and strip trailing punctuation. New `RuleBasedExtractor.test.ts` has 4 cases.
+
+Re-verified live:
+- "Tower of London" → 22 s preview "Tower of London is closest to Tower Hill — about 246 m (~3 min) walk." ✓
+- "Buckingham Palace?" → 4.1 s preview "Buckingham Palace is closest to Victoria — about 598 m (~7 min) walk." ✓
+- "Hampstead Heath" → 20 s, 3-segment 22-min Northern + Victoria + Mildmay route. ✓
+
+118 tests pass.

@@ -87,7 +87,14 @@ export class RuleBasedStructuredModelClient implements StructuredIntentModelAdap
                     destination = stationMatches[0];
                 }
             } else {
-                destination = rawQuery.split(/to| a |الى|إلى/i).pop()?.trim() ?? null;
+                // Split on "to" / "a " (Spanish) / Arabic prepositions, but
+                // require word boundaries on the English splitters so we don't
+                // chop "Tower" or "Stoke" mid-word. Trim any trailing
+                // punctuation off the result.
+                const tail = rawQuery.split(/\bto\b|\ba\s|الى|إلى/i).pop();
+                destination = tail
+                    ? tail.trim().replace(/[?!.,;:]+$/g, '').trim() || null
+                    : null;
             }
         }
 
