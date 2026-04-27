@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import MapLibreGL from '@maplibre/maplibre-react-native';
+import RNFS from 'react-native-fs';
 
 import tubeGraphAsset from '../../../assets/tubeGraph.json';
+import { buildMapStyle } from './buildMapStyle';
 import { colors, getTubeLineStyle, TUBE_LINE_STYLES } from '../theme';
 
 interface TubeGraphNode {
@@ -36,8 +38,32 @@ export function TubeLineMap({
     onStationPress?: (stationName: string) => void;
 }): React.JSX.Element {
     const graph = tubeGraphAsset as unknown as TubeGraphShape;
-    const [zoomLevel, setZoomLevel] = useState(10);
+    const [zoomLevel, setZoomLevel] = useState(11);
     const [centerCoordinate, setCenterCoordinate] = useState<[number, number]>(DEFAULT_CENTER);
+    const [localTilesPrefix, setLocalTilesPrefix] = useState<string | null>(null);
+
+    // Use the same offline tile probe as OfflineMapSurface — when the bundled
+    // tiles are present, MapLibre paints street context behind the tube lines.
+    // Without it the lines float on a flat background, which is hard to read.
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            const tilesRoot = `${RNFS.DocumentDirectoryPath}/map-tiles`;
+            const sentinel = `${tilesRoot}/13/4093/2723.png`;
+            try {
+                const present = await RNFS.exists(sentinel);
+                if (!cancelled) setLocalTilesPrefix(present ? `file://${tilesRoot}` : null);
+            } catch {
+                if (!cancelled) setLocalTilesPrefix(null);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    const mapStyle = useMemo(
+        () => JSON.stringify(buildMapStyle({ localTilesPrefix })),
+        [localTilesPrefix],
+    );
 
     // Build node lookup
     const nodeById = useMemo(() => {
@@ -130,7 +156,7 @@ export function TubeLineMap({
             <View style={styles.mapShell}>
                 <MapLibreGL.MapView
                     style={StyleSheet.absoluteFill}
-                    styleURL="asset://styles/offline-style.json"
+                    mapStyle={mapStyle}
                     onPress={(event: { geometry?: { coordinates?: [number, number] } }) => {
                         const coords = event.geometry?.coordinates;
                         if (!coords) return;
@@ -159,10 +185,20 @@ export function TubeLineMap({
                                     id={`line-${lineId}-layer`}
                                     style={{
                                         lineColor: style.hex,
-                                        lineWidth: lineId === 'walking-transfer' ? 1.5 : 3,
+                                        // Zoom-interpolated width: thinner at the
+                                        // overview zoom so lines don't blob
+                                        // together, thicker when zoomed in.
+                                        lineWidth: [
+                                            'interpolate',
+                                            ['linear'],
+                                            ['zoom'],
+                                            9, lineId === 'walking-transfer' ? 1 : 2,
+                                            12, lineId === 'walking-transfer' ? 1.5 : 3.5,
+                                            15, lineId === 'walking-transfer' ? 2 : 5,
+                                        ] as never,
                                         lineCap: 'round',
                                         lineJoin: 'round',
-                                        lineOpacity: lineId === 'walking-transfer' ? 0.5 : 0.9,
+                                        lineOpacity: lineId === 'walking-transfer' ? 0.5 : 0.92,
                                     }}
                                 />
                             </MapLibreGL.ShapeSource>
@@ -171,11 +207,22 @@ export function TubeLineMap({
                     <MapLibreGL.ShapeSource id="stations" shape={stationFeatureCollection as never}>
                         <MapLibreGL.CircleLayer
                             id="stations-layer"
+                            // Hide stations at the very lowest zooms so the
+                            // map isn't a soup of dots; let interchanges show
+                            // first, then everything as you zoom in.
+                            minZoomLevel={9}
                             style={{
                                 circleColor: '#ffffff',
                                 circleStrokeColor: colors.ink,
                                 circleStrokeWidth: 1.4,
-                                circleRadius: ['case', ['==', ['get', 'isInterchange'], 1], 4, 2.5] as never,
+                                circleRadius: [
+                                    'interpolate',
+                                    ['linear'],
+                                    ['zoom'],
+                                    9, ['case', ['==', ['get', 'isInterchange'], 1], 2.5, 1.4],
+                                    12, ['case', ['==', ['get', 'isInterchange'], 1], 4.5, 2.8],
+                                    15, ['case', ['==', ['get', 'isInterchange'], 1], 7, 4.5],
+                                ] as never,
                             }}
                         />
                     </MapLibreGL.ShapeSource>
@@ -211,7 +258,7 @@ export function TubeLineMap({
                         <Pressable
                             onPress={() => {
                                 setCenterCoordinate(DEFAULT_CENTER);
-                                setZoomLevel(10);
+                                setZoomLevel(11);
                             }}
                             style={styles.controlButton}
                         >
@@ -263,7 +310,7 @@ const styles = StyleSheet.create({
         borderColor: colors.line,
         borderRadius: 20,
         borderWidth: 1,
-        height: 380,
+        height: 520,
         overflow: 'hidden',
     },
     overlay: {

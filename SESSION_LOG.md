@@ -44,3 +44,15 @@ Baseline screenshots in `SESSION_NOTES/baseline-{go,lost,maps,settings}.png`.
 Build clean · 108 tests pass.
 
 Screenshots: `SESSION_NOTES/iter1-{go,settings,maps-tube,maps-city}.png`.
+
+### Iteration 2 (02:20 → 02:25 BST)
+
+**Tube line map readability.** Three changes:
+1. `mapShell` height 380 → 520 px so Central London actually has room.
+2. Switched to the runtime-built MapLibre style via `buildMapStyle`, so when the offline tile dir is on disk the tube lines paint on top of real street context. The tube map was previously a flat grey background — the lines made geometric sense but you couldn't tell which line was which without the chip legend below.
+3. Zoom-interpolated line widths (2 px at z9 → 5 px at z15) and station radii (1.4 → 7 px). Stations hidden below z9 to keep the overview tidy.
+4. Default zoom 10 → 11 so Zone 1 fills the frame.
+
+Result: stations + lines + street context all readable in one frame. Camden, King's Cross, Westminster, Pimlico, City of London, Old Kent, Lambeth all labelled. See `SESSION_NOTES/iter2-tube.png`.
+
+Build clean · 108 tests pass.
