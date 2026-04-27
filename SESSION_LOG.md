@@ -56,3 +56,14 @@ Screenshots: `SESSION_NOTES/iter1-{go,settings,maps-tube,maps-city}.png`.
 Result: stations + lines + street context all readable in one frame. Camden, King's Cross, Westminster, Pimlico, City of London, Old Kent, Lambeth all labelled. See `SESSION_NOTES/iter2-tube.png`.
 
 Build clean · 108 tests pass.
+
+### Iteration 3 (02:25 → 02:30 BST)
+
+**Empty input + loading state + accessibility on GO.**
+- `runQuery` now early-returns on empty/whitespace input with a friendly hint pointing at the example chips. Was previously sending an empty string to the LLM (always unresolved, wasted 20s).
+- Search button shows an `ActivityIndicator` next to "Routing…" while in flight. Previously just text-changed which is invisible to a tired user.
+- Added `accessibilityLabel`, `accessibilityHint`, `accessibilityRole`, and `accessibilityState` on Search / Voice / Speak so VoiceOver users get useful announcements.
+
+Build clean · 108 tests pass · Regression check: "Waterloo to Baker Street" still routes to 8-min Jubilee path with full station list.
+
+Screenshots: `SESSION_NOTES/iter3-{go-fresh,lost}.png`.

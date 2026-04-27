@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Tts from 'react-native-tts';
 
 import { CollapsibleCard } from '../components/CollapsibleCard';
@@ -128,10 +128,19 @@ export function GoScreen(): React.JSX.Element {
     };
 
     const runQuery = async () => {
+        const trimmed = query.trim();
+        if (!trimmed) {
+            setFlowAlert({
+                label: 'empty input',
+                detail: 'Type or speak where you want to go. Try "Waterloo to Baker Street" or tap an example below.',
+                tone: 'warn',
+            });
+            return;
+        }
         setFlowAlert(null);
         setIsLoading(true);
         try {
-            const pipelineResult = await mobilePipeline.queryPipeline.execute(query, mobilePipeline.knownStations);
+            const pipelineResult = await mobilePipeline.queryPipeline.execute(trimmed, mobilePipeline.knownStations);
             setResult(pipelineResult);
             setResultText(pipelineResult.rendered?.text ?? null);
 
@@ -241,20 +250,39 @@ export function GoScreen(): React.JSX.Element {
                         onPress={() => void runQuery()}
                         disabled={isLoading}
                         style={[styles.primaryButton, isLoading ? styles.buttonDisabled : null]}
+                        accessibilityLabel="Search for a journey"
+                        accessibilityHint="Sends your query to the on-device routing engine"
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: isLoading, busy: isLoading }}
                     >
-                        <Text style={styles.primaryButtonText}>{isLoading ? 'Routing…' : 'Search'}</Text>
+                        {isLoading ? (
+                            <View style={styles.primaryButtonContent}>
+                                <ActivityIndicator size="small" color="#fffaf1" />
+                                <Text style={styles.primaryButtonText}>Routing…</Text>
+                            </View>
+                        ) : (
+                            <Text style={styles.primaryButtonText}>Search</Text>
+                        )}
                     </Pressable>
                     <Pressable
                         onPress={() => void toggleVoiceSearch()}
                         style={[styles.iconButton, stt.isListening ? styles.iconButtonActive : null]}
-                        accessibilityLabel={stt.isListening ? 'Stop voice input' : 'Voice input'}
+                        accessibilityLabel={stt.isListening ? 'Stop voice input' : 'Start voice input'}
+                        accessibilityHint="Listens through the device microphone and transcribes your query"
+                        accessibilityRole="button"
                     >
                         <Text style={stt.isListening ? styles.iconButtonTextActive : styles.iconButtonText}>
                             {stt.isListening ? '● Listening' : '🎤 Voice'}
                         </Text>
                     </Pressable>
                     {resultText ? (
-                        <Pressable onPress={() => void playVoice()} style={styles.iconButton}>
+                        <Pressable
+                            onPress={() => void playVoice()}
+                            style={styles.iconButton}
+                            accessibilityLabel="Speak directions aloud"
+                            accessibilityHint="Reads the latest routing answer using on-device text-to-speech"
+                            accessibilityRole="button"
+                        >
                             <Text style={styles.iconButtonText}>🔊 Speak</Text>
                         </Pressable>
                     ) : null}
@@ -393,6 +421,11 @@ const styles = StyleSheet.create({
     },
     buttonDisabled: {
         opacity: 0.6,
+    },
+    primaryButtonContent: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        gap: 8,
     },
     primaryButtonText: {
         color: '#fffaf1',
