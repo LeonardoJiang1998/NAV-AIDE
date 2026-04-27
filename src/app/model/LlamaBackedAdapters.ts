@@ -96,6 +96,49 @@ export class FallbackStructuredIntentAdapter implements StructuredIntentModelAda
     }
 }
 
+/**
+ * "Fast first" adapter: run the rule-based extractor first because it's
+ * sub-millisecond; only fall through to the LLM if the rule extractor
+ * couldn't classify the intent or couldn't pull a route endpoint. This
+ * eliminates the 40–80 s LLM round-trip for ordinary "X to Y" / "Take me to
+ * X" queries that the rule bridge handles cleanly.
+ *
+ * Layered as the primary in the existing FallbackStructuredIntentAdapter
+ * chain so the LLM still acts as the safety net on novel phrasings.
+ */
+export class FastFirstStructuredIntentAdapter implements StructuredIntentModelAdapter {
+    public constructor(
+        private readonly fast: StructuredIntentModelAdapter,
+        private readonly slow: StructuredIntentModelAdapter
+    ) { }
+
+    public async generateStructured<T>(request: { prompt: string; schema: object }): Promise<T> {
+        const fastResult = await this.fast.generateStructured<T>(request);
+        if (this.fastResultIsConfident(fastResult)) {
+            return fastResult;
+        }
+        try {
+            return await this.slow.generateStructured<T>(request);
+        } catch {
+            // LLM unavailable → keep the rule-based answer rather than fail.
+            return fastResult;
+        }
+    }
+
+    private fastResultIsConfident(result: unknown): boolean {
+        if (!result || typeof result !== 'object') return false;
+        const r = result as { intent?: string; origin?: string | null; destination?: string | null; poiQuery?: string | null };
+        // Unknown intent → defer to LLM.
+        if (!r.intent || r.intent === 'unknown') return false;
+        // Route/fare with neither origin nor destination → defer to LLM, the
+        // raw text might be unusual phrasing.
+        if ((r.intent === 'route' || r.intent === 'fare') && !r.origin && !r.destination) return false;
+        // POI lookup with no query → defer.
+        if (r.intent === 'poi_lookup' && !r.poiQuery) return false;
+        return true;
+    }
+}
+
 export class FallbackRenderAdapter implements NaturalLanguageRenderAdapter {
     public constructor(
         private readonly primary: NaturalLanguageRenderAdapter,

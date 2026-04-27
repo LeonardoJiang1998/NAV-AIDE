@@ -110,3 +110,19 @@ Pausing the loop here pending user wake-up review. Tomorrow's high-impact items:
 - Phase 5.1 STT/TTS end-to-end on physical iPhone (needs hands)
 - Performance: model warmup is ~50s on first query; can preload during AppShell mount
 - Bus route → walking-only pipeline integration (currently chips just stage-for-GO)
+
+### Iteration 6 (02:36 → 02:43 BST) — query latency 13× speedup
+
+**FastFirstStructuredIntentAdapter** wraps the rule-based extractor and short-circuits the LLM for clean queries. Confidence test: rule result must have a non-`unknown` intent AND at least one of `origin` / `destination` / `poiQuery` populated. Otherwise the LLM gets the prompt as before.
+
+Wired as the primary inside the existing `FallbackStructuredIntentAdapter` chain so the LLM stays the safety net for novel phrasings (and the chain stays the safety net if both fail).
+
+Verified live on simulator:
+- "Waterloo to Baker Street": **58 s → 4.4 s** (13× speedup)
+- "Take me to the British Museum": **42 s → 3.0 s** (14× speedup)
+
+Both still produce identical output: same Jubilee narrative, same POI walking preview, same hallucination guards. The IntentOrderCorrector still runs after extraction so the rule extractor's known origin/destination quirks are caught.
+
+6 new unit tests for FastFirstStructuredIntentAdapter cover: confident pass-through, destination-only pass-through, unknown→LLM, no-endpoint→LLM, LLM-error fallback, poi_lookup-empty→LLM. Total tests now 114.
+
+Build clean.
