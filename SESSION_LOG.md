@@ -168,3 +168,35 @@ Verified live: programmatically set lastRoute = "Heathrow Terminal 5 → Canary 
 OSM street tiles are missing at z9 because my MBTiles coverage starts at z10 — that's fine, at network scale the streets aren't readable anyway.
 
 Build clean.
+
+## Final state at 03:00 BST
+
+Nine iterations shipped. App is in much better shape than the baseline at 02:08:
+
+| Area | Before | After |
+|---|---|---|
+| Settings | wall of system alerts | actual settings (preferences/permissions/feedback up top, diagnostics collapsed) |
+| GO header chip | "fallback mode" misleadingly | accurate `ready` / `rule-based` / `limited` |
+| GO loading state | text-changes-to-"Routing…" | spinner + a11y busy state |
+| GO empty input | sent "" to LLM, 20 s wasted | early-return with hint pointing at examples |
+| Tube line map | flat grey background, dense soup | OSM streets behind, zoom-aware widths/radii, auto-fits to highlighted route |
+| London city map | unverified | verified painting from local file:// tiles |
+| Bus routes | dead data | 29 routes surfaced as TfL-red/Night-navy chips with stop expansion |
+| Query latency (clean) | 40-80 s | **0.1-0.8 s** (rule extractor + rule renderer first; LLM is now safety-net only) |
+| Rule extractor | broke "Tower" mid-word | word-boundary splits + trailing-punct strip |
+| Test count | 108 | **118** |
+| Dev hooks | none | nav ref, map-tab setter, lastRoute setter for autonomous-loop verification |
+
+Final screenshots in `SESSION_NOTES/final-{go,lost,maps,settings}.png`.
+
+## Pause point — pending user wake-up review
+
+10 commits, all pushed to `claude/adoring-mcnulty-d8fbc9`. Tomorrow's high-impact items not in this session:
+
+1. **STT/TTS round-trip on physical iPhone** — needs your hands.
+2. **Multi-language sample queries** — app boasts 140 languages, current chips are all English.
+3. **Disambiguation flow visual polish** — works mechanically (e.g. "Park" → multiple matches) but never screenshotted with real candidates. Recommend running "Take me to Park" on simulator and verifying the candidate chips render cleanly.
+4. **Phase 3 — real Valhalla walking tiles** — multi-day work.
+5. **Phase 4.2 — bigger tile coverage** — current MBTiles is Greater London z10–12 + Zone 1 z13–14. Expand to Zone 2-3 detail.
+
+Ending the autonomous loop here. The app is in a state I'd be happy to hand to a tester.
