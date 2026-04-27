@@ -80,3 +80,33 @@ Screenshots: `SESSION_NOTES/iter3-{go-fresh,lost}.png`.
 Build clean.
 
 Screenshot: `SESSION_NOTES/iter4-maps-buses.png` (bus card is below the fold; collapsed by default).
+
+### Iteration 5 (02:33 → 02:36 BST) — verification + skip-cosmetic-polish
+
+Per Karpathy guideline #3 (Surgical Changes — don't refactor what isn't broken), I deliberately did **not** do a token-substitution pass replacing literal `'#fffaf1'` with `colors.paperRaised` etc. The visual result is the same, the diff is pure churn, and it would risk introducing inconsistencies in places that already match by luck.
+
+Instead, smoke-tested the user-facing flows on the live simulator after every iteration's changes were applied:
+
+- "Take me to the British Museum" → 42s → POI preview: *"British Museum is closest to Tottenham Court Road — about 484 m (~6 min) walk. Tell me your starting station for full tube directions."* ✓
+- "Heathrow Terminal 5 to Canary Wharf" → 80s → 28-min Piccadilly + Elizabeth journey, two-segment narrative. ✓
+- "Waterloo to Baker Street" (regression after Settings rewrite) → 58s → 8-min Jubilee, full station list. ✓
+
+Build clean · 108 tests pass.
+
+## Stopping point
+
+Five iterations shipped. App is in a meaningfully better state than baseline:
+1. Settings actually has settings (not a wall of diagnostics).
+2. GO chip tells the user something useful.
+3. Tube line map is legible because it sits on real streets and scales by zoom.
+4. London city map verified painting from local OSM tiles.
+5. Empty input + loading spinner + accessibility hooks on Search/Voice/Speak.
+6. 29 bus routes finally surface, with stop-list expansion and stage-to-GO.
+7. Dev hooks added so the next autonomous loop can drive screens without simulator taps.
+
+All commits pushed to `claude/adoring-mcnulty-d8fbc9`. PR is open at #6 (or open new at https://github.com/LeonardoJiang1998/NAV-AIDE/pull/new/claude/adoring-mcnulty-d8fbc9).
+
+Pausing the loop here pending user wake-up review. Tomorrow's high-impact items:
+- Phase 5.1 STT/TTS end-to-end on physical iPhone (needs hands)
+- Performance: model warmup is ~50s on first query; can preload during AppShell mount
+- Bus route → walking-only pipeline integration (currently chips just stage-for-GO)
