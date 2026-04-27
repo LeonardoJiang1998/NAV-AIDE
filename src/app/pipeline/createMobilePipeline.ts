@@ -92,9 +92,15 @@ export function createMobilePipeline(): MobilePipeline {
         ),
         new RuleBasedStructuredModelClient(knownStations),
     );
+    // Render the prebuilt summary verbatim. `buildRouteNarrative`,
+    // `handleDestinationPreview`, and `handleOriginPreview` already produce
+    // clean declarative sentences — the LLM renderer just paraphrases them
+    // (slowly), occasionally hallucinates place names that the guard then
+    // rejects, and never improves the output meaningfully. Keep the LLM
+    // renderer in the chain as a safety net only.
     const responseModel = new FallbackRenderAdapter(
+        new RuleBasedRenderClient(),
         new LlamaBackedRenderAdapter(modelManager, assetLoader),
-        new RuleBasedRenderClient()
     );
 
     let activeRuntime = createQueryPipelineRuntime(

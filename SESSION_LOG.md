@@ -141,3 +141,18 @@ Re-verified live:
 - "Hampstead Heath" → 20 s, 3-segment 22-min Northern + Victoria + Mildmay route. ✓
 
 118 tests pass.
+
+### Iteration 8 (02:50 → 02:55 BST) — sub-second responses
+
+**Swap render fallback chain to put `RuleBasedRenderClient` first.** Looking at the rule renderer: it takes the prompt's `Summary:` line and returns it verbatim, plus the allowed place names. The summary is already a high-quality declarative sentence built by `buildRouteNarrative` / `handleDestinationPreview` / `handleOriginPreview`. The LLM render step was just paraphrasing it (slowly) and occasionally hallucinating place names that the guard then rejected.
+
+The LlamaBackedRenderAdapter remains in the chain as the safety fallback if the rule renderer ever throws.
+
+Verified live on simulator:
+- "Waterloo to Baker Street": 58 s → 4.4 s → **0.1 s** (580× total speedup)
+- "Take me to the British Museum": 42 s → 3.0 s → **0.8 s** (53× total)
+- "Heathrow T5 to Canary Wharf": 80 s → 4.4 s → **0.1 s** (800× total)
+
+All three produce identical content to before. The LLM is now used exclusively when the rule extractor returns intent='unknown' — i.e. only for genuinely novel phrasings.
+
+Build clean · 118 tests pass.
