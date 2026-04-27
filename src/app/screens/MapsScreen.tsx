@@ -22,6 +22,13 @@ export function MapsScreen(): React.JSX.Element {
     const [activeMap, setActiveMap] = useState<'tube' | 'city'>('tube');
     const [localTilesPrefix, setLocalTilesPrefix] = useState<string | null>(null);
 
+    // DEV-only: expose the activeMap setter to the remote debugger so the
+    // autonomous build-loop can verify the city tab without taps.
+    if (__DEV__) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (globalThis as any).__NAVAIDE_SET_MAP_TAB = setActiveMap;
+    }
+
     // Probe for offline-extracted raster tiles in the app's Documents
     // directory. If present, we'll swap the map style to use `file://` URLs
     // instead of OSM over HTTPS — the whole point of the offline-first promise.

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { GoScreen } from '../screens/GoScreen';
@@ -10,9 +10,18 @@ import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
+// DEV-only navigation ref so the remote debugger / scripts can drive the
+// active tab via globalThis.__NAVAIDE_NAV_REF.navigate('Maps') etc. Used by
+// scripts/dev/remote-ask.mjs and the autonomous build-loop tooling.
+export const navigationRef = createNavigationContainerRef();
+if (__DEV__) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).__NAVAIDE_NAV_REF = navigationRef;
+}
+
 export function AppNavigator(): React.JSX.Element {
     return (
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
             <Tab.Navigator
                 screenOptions={{
                     headerStyle: { backgroundColor: colors.paper },

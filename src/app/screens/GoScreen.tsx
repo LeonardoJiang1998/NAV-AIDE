@@ -98,15 +98,21 @@ export function GoScreen(): React.JSX.Element {
         }
     }, [stagedDestination]);
 
+    // The header chip reflects what actually affects answer quality from the
+    // user's perspective: is the LLM loaded, and is the routing data on the
+    // device? `demoReadiness.readyForInternalDemo` also factors in MBTiles
+    // and Valhalla tiles, which don't matter for tube routing — surfacing
+    // "fallback mode" because the city map is missing was misleading.
     const headerChip = useMemo(() => {
-        if (!demoReadiness.readyForInternalDemo) {
-            return { label: 'fallback mode', tone: 'warn' as const };
+        const sqliteOk = runtimeState.source === 'sqlite-runtime';
+        if (!modelStatus?.loaded && !sqliteOk) {
+            return { label: 'limited', tone: 'warn' as const };
         }
         if (!modelStatus?.loaded) {
             return { label: 'rule-based', tone: 'warn' as const };
         }
         return { label: 'ready', tone: 'good' as const };
-    }, [demoReadiness.readyForInternalDemo, modelStatus?.loaded]);
+    }, [modelStatus?.loaded, runtimeState.source]);
 
     const toggleVoiceSearch = async () => {
         if (!voiceCapabilities?.stt || !permissions.microphone) {
