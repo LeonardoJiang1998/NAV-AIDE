@@ -80,6 +80,14 @@ export function AppShellProvider({ children }: { children: React.ReactNode }): R
     const [stagedDestination, setStagedDestination] = useState<string | null>(null);
     const [lastRoute, setLastRoute] = useState<LastRoute | null>(null);
 
+    // DEV-only: expose the lastRoute setter so the autonomous build-loop can
+    // simulate a finished search end-to-end (the GO screen owns the live
+    // setter via its closure, which the loop can't reach directly).
+    if (__DEV__) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (globalThis as any).__NAVAIDE_SET_LAST_ROUTE = setLastRoute;
+    }
+
     const assetDiagnostics = useMemo<AssetDiagnostics>(
         () => deriveAssetDiagnostics(assetStatus),
         [assetStatus],

@@ -156,3 +156,15 @@ Verified live on simulator:
 All three produce identical content to before. The LLM is now used exclusively when the rule extractor returns intent='unknown' — i.e. only for genuinely novel phrasings.
 
 Build clean · 118 tests pass.
+
+### Iteration 9 (02:55 → 03:00 BST) — auto-fit map bounds to highlighted route
+
+When `TubeLineMap` receives a non-empty `highlightedRoute`, it now computes the bounding box of the route's stations and fits the camera to it. Center = mid-route; zoom picked from the lat-span (z9 for Greater-London-scale routes, z13 for short hops). Without this the user had to pan around to find their route.
+
+Also exposed `__NAVAIDE_SET_LAST_ROUTE` for the autonomous loop so I can verify route-driven UI without going through the GO button (which owns the live setter via its closure).
+
+Verified live: programmatically set lastRoute = "Heathrow Terminal 5 → Canary Wharf" (15-station Elizabeth+Piccadilly), navigated to Maps. Map zoomed out to z9 and the thick teal route line snakes across the whole network from Heathrow on the west to Canary Wharf on the east. See `SESSION_NOTES/iter9b-fitbounds.png`.
+
+OSM street tiles are missing at z9 because my MBTiles coverage starts at z10 — that's fine, at network scale the streets aren't readable anyway.
+
+Build clean.

@@ -143,6 +143,35 @@ export function TubeLineMap({
         };
     }, [highlightedRoute, nodeById]);
 
+    // When a route is highlighted, fit the camera to its bounding box so the
+    // user sees the whole journey instead of having to pan around. Centers
+    // mid-route + picks a zoom that comfortably contains the bounds.
+    useEffect(() => {
+        if (!highlightedRoute || highlightedRoute.length < 2) return;
+        const points: Array<{ lat: number; lon: number }> = [];
+        for (const id of highlightedRoute) {
+            const node = nodeById.get(id);
+            if (node && typeof node.lat === 'number' && typeof node.lon === 'number') {
+                points.push({ lat: node.lat, lon: node.lon });
+            }
+        }
+        if (points.length < 2) return;
+        let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+        for (const p of points) {
+            if (p.lat < minLat) minLat = p.lat;
+            if (p.lat > maxLat) maxLat = p.lat;
+            if (p.lon < minLon) minLon = p.lon;
+            if (p.lon > maxLon) maxLon = p.lon;
+        }
+        const center: [number, number] = [(minLon + maxLon) / 2, (minLat + maxLat) / 2];
+        const span = Math.max(maxLat - minLat, (maxLon - minLon) / Math.cos((center[1] * Math.PI) / 180));
+        // Empirical mapping from lat-degree span → zoom level for our 520 px map frame.
+        // ~0.7° spans Greater London, fits at zoom 9.5.
+        const zoom = span > 0.5 ? 9 : span > 0.2 ? 11 : span > 0.05 ? 12 : 13;
+        setCenterCoordinate(center);
+        setZoomLevel(zoom);
+    }, [highlightedRoute, nodeById]);
+
     const stationCount = stationFeatureCollection.features.length;
     const edgeCount = graph.edges.length;
     const lineCount = lineFeatureCollections.length;
